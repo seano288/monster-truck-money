@@ -22,6 +22,7 @@ PHRASES = [
     'What is this called?', 'How much is this worth?', 'Which is worth more?', 'Which is worth less?',
     'Try again!', 'The dime is small, but it is worth more!', 'Tap a coin to hear its name.',
     'You crushed it!', 'You won a trophy!', *CHEERS,
+    'Ready, set, go!', 'You won the race!', 'Get ready for the next race!', 'You won the Monster Cup!',
 ]
 for name, value in MONEY:
     PHRASES += [f'Tap the {name}!', f'{name}?', f'{value}?', f"That's a {name}.", f'Find the {name}!', f'{name} is {value}.']
