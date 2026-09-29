@@ -4,6 +4,7 @@ import { startRound } from '../round/round';
 import { sBad } from '../audio/sfx';
 import { BoltPile, LevelDots, TruckArt } from '../ui/bits';
 import { currentFit } from '../garage/garage';
+import { GoalBar } from '../garage/GoalBar';
 import { screen } from './nav';
 
 const PAINT = ['#8d96a3', '#1e7bff', '#ff6a00', '#c04dff'];
@@ -14,6 +15,7 @@ export function Home() {
     <div class="screen home-screen">
       <header class="home-head">
         <h1>Monster Truck Money</h1>
+        <GoalBar />
         <BoltPile />
       </header>
       <div class="home">

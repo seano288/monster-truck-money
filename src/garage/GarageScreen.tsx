@@ -2,13 +2,15 @@
 // swings the camera there and opens that Slot's sheet of 4 Mods (bottom sheet in portrait, side panel in landscape).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
-import { HORNS, sClink } from '../audio/sfx';
+import { HORNS, sClink, sFanfare, sNope } from '../audio/sfx';
 import { game } from '../game/store';
 import { startRound } from '../round/round';
-import { BoltPile, IconButton } from '../ui/bits';
+import { Bolt, BoltPile, IconButton } from '../ui/bits';
 import { say } from '../voice/say';
-import { BODY_NAMES, modName, SLOTS, slotById, type Rung, type SlotId } from './catalog';
-import { currentBody, currentFit, fit, isUnlocked, stepBody } from './garage';
+import { BODY_NAMES, modId, modName, SLOTS, slotById, type Rung, type SlotId } from './catalog';
+import { PRICES } from './economy';
+import { canAfford, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, slotHasAffordable, stepBody, tapMod } from './garage';
+import { GoalBar } from './GoalBar';
 import { PartIcon } from './icons';
 import { GarageStage } from './three/stage';
 
@@ -17,6 +19,7 @@ export function GarageScreen() {
   const hots = useRef<Partial<Record<SlotId, HTMLButtonElement | null>>>({});
   const [stage, setStage] = useState<GarageStage | null>(null);
   const [sheet, setSheet] = useState<SlotId | null>(null);
+  const [wiggle, setWiggle] = useState<string | null>(null);
   const body = currentBody(), f = currentFit();
 
   useEffect(() => {
@@ -45,11 +48,23 @@ export function GarageScreen() {
   }
   function closeSheet() { setSheet(null); stage?.focus(null); }
 
-  function tapMod(slot: SlotId, rung: Rung) {
-    if (!isUnlocked(slot, rung)) return void say(modName(slot, rung));
-    fit(slot, rung);
-    if (slot === 'horn') HORNS[rung]!();
-    else { sClink(); void say(modName(slot, rung)); }
+  function tap(slot: SlotId, rung: Rung) {
+    const result = tapMod(slot, rung);
+    if (result === 'fitted') {
+      if (slot === 'horn') HORNS[rung]!();
+      else { sClink(); void say(modName(slot, rung)); }
+    } else if (result === 'unlocked') {
+      const mod = modId(slot, rung as 1 | 2 | 3);
+      sFanfare();
+      if (slot === 'horn') setTimeout(() => HORNS[rung]!(), 500);
+      void say(gotLine(mod));
+      stage?.play('hop');
+    } else {
+      sNope();
+      void say(...needLines(modId(slot, rung as 1 | 2 | 3)));
+      setWiggle(`${slot}:${rung}`);
+      setTimeout(() => setWiggle(null), 450);
+    }
   }
 
   const bodyStep = (d: 1 | -1) => { stepBody(d); void say(BODY_NAMES[currentBody()]); };
@@ -58,6 +73,7 @@ export function GarageScreen() {
     <div class={`screen garage-screen ${sheet ? 'open' : ''}`}>
       <header class="garage-hud">
         <BoltPile count={game.value.bolts} />
+        <GoalBar />
         <div class="spacer" />
         <IconButton label="Home" onClick={() => (screen.value = 'home')}>🏠</IconButton>
         <IconButton label="Play" class="go" onClick={() => startRound(game.value.lastMode)}>▶</IconButton>
@@ -69,7 +85,7 @@ export function GarageScreen() {
           <button class="arrow l" aria-label="Previous truck" onClick={() => bodyStep(-1)}>◀</button>
           <button class="arrow r" aria-label="Next truck" onClick={() => bodyStep(1)}>▶</button>
           {SLOTS.map(s => (
-            <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${sheet === s.id ? 'on' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
+            <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${sheet === s.id ? 'on' : ''} ${slotHasAffordable(s.id) ? 'aff' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
           ))}
         </div>
       </div>
@@ -78,13 +94,16 @@ export function GarageScreen() {
           <div class="sheethead"><span>{slotById(sheet).icon}</span>{slotById(sheet).name}<button class="x" aria-label="Close" onClick={closeSheet}>✕</button></div>
           <div class="sheettiles">
             {([0, 1, 2, 3] as const).map(r => {
-              const un = isUnlocked(sheet, r), fitted = f[sheet] === r;
+              const un = isUnlocked(sheet, r), fitted = f[sheet] === r, aff = canAfford(sheet, r), price = r ? PRICES[r] : 0;
+              const cls = fitted ? 'fitted' : un ? 'owned' : aff ? 'afford' : 'locked';
               return (
-                <button key={r} class={`mod-tile ${fitted ? 'fitted' : un ? 'owned' : 'locked'}`} aria-label={modName(sheet, r)} onClick={() => tapMod(sheet, r)}>
+                <button key={r} class={`mod-tile ${cls} ${wiggle === `${sheet}:${r}` ? 'wiggle' : ''}`} aria-label={modName(sheet, r)} onClick={() => tap(sheet, r)}>
                   <div class="ico"><PartIcon slot={sheet} rung={r} /></div>
                   <div class="nm">{modName(sheet, r)}</div>
+                  {!un && <div class="cost"><Bolt size={20} />{price}</div>}
                   {fitted && <div class="check">✓</div>}
-                  {!un && <div class="lock">🔒</div>}
+                  {cls === 'locked' && <><div class="lock">🔒</div><div class="prog"><i style={{ width: `${(game.value.bolts / price) * 100}%` }} /></div></>}
+                  {r > 0 && goal() === modId(sheet, r as 1 | 2 | 3) && <div class="flag">🎯</div>}
                 </button>
               );
             })}

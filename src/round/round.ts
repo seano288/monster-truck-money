@@ -5,6 +5,7 @@ import { sBad, sGood } from '../audio/sfx';
 import { screen } from '../app/nav';
 import { pick } from '../game/rng';
 import { game, update } from '../game/store';
+import { affordableCount } from '../garage/garage';
 import { opensWith } from '../modes/chain';
 import type { Level, ModeId } from '../modes/ids';
 import { modeById, MODES } from '../modes/modes';
@@ -33,6 +34,8 @@ export interface Round {
   busy: boolean;
   events: RoundEvent[];
   ended: boolean;
+  /** The Bolts from this Round made a new Mod affordable. */
+  canBuild: boolean;
 }
 
 export const round = signal<Round | null>(null);
@@ -48,7 +51,7 @@ export function startRound(mode: ModeId) {
   update(s => ({ ...s, lastMode: mode }));
   round.value = {
     mode, level: m.level, intro: m.introPending, stars: 0, problem: modeById(mode).makeProblem(m.level, Math.random),
-    key: 0, firstTry: true, helped: false, busy: false, events: [], ended: false,
+    key: 0, firstTry: true, helped: false, busy: false, events: [], ended: false, canBuild: false,
   };
   screen.value = 'round';
 }
@@ -112,6 +115,7 @@ export function helped() {
 }
 
 function endRound() {
+  const before = affordableCount();
   update(s => ({ ...s, bolts: s.bolts + BOLTS_PER_ROUND }));
-  set({ ended: true });
+  set({ ended: true, canBuild: affordableCount() > before });
 }

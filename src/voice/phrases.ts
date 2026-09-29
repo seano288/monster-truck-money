@@ -44,9 +44,22 @@ type ModePhrase = `You are a ${ModeName} star!`;
 const modePhrases = (): ModePhrase[] => MODE_NAMES.map(m => `You are a ${m} star!` as const);
 
 // ---------- Garage ----------
-const GARAGE = ['Garage!'] as const;
-type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName;
-const garagePhrases = (): GaragePhrase[] => [...GARAGE, ...Object.values(BODY_NAMES), ...SLOTS.map(s => s.name), ...SLOTS.flatMap(s => s.mods)];
+const GARAGE = ['Garage!', 'You built everything!', 'You can build something new!', 'Wow!', "That's the best one!"] as const;
+/** The 15 Mods that cost Bolts (not the free defaults). */
+type RungModName = Exclude<ModName, (typeof SLOTS)[number]['mods'][0]>;
+type BoltsPhrase = `You need 1 more Bolt.` | `You need ${number} more Bolts.`;
+type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName | `You got ${RungModName}!` | `You can get ${RungModName}!` | BoltsPhrase;
+export const MAX_PRICE = 18;
+/** "You need 4 more Bolts." */
+export const needBolts = (n: number): BoltsPhrase => (n === 1 ? 'You need 1 more Bolt.' : `You need ${n} more Bolts.`);
+const garagePhrases = (): GaragePhrase[] => {
+  const rungMods = SLOTS.flatMap(s => s.mods.slice(1)) as RungModName[];
+  return [
+    ...GARAGE, ...Object.values(BODY_NAMES), ...SLOTS.map(s => s.name), ...SLOTS.flatMap(s => s.mods),
+    ...rungMods.map(m => `You got ${m}!` as const), ...rungMods.map(m => `You can get ${m}!` as const),
+    ...Array.from({ length: MAX_PRICE }, (_, i) => needBolts(i + 1)),
+  ];
+};
 
 export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | GaragePhrase | AmountPiece;
 

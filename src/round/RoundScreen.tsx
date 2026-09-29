@@ -1,4 +1,5 @@
 import { screen } from '../app/nav';
+import { GoalBar } from '../garage/GoalBar';
 import { modeById } from '../modes/modes';
 import { BoltPile, IconButton, Stars } from '../ui/bits';
 import { EndOverlay } from './EndOverlay';
@@ -15,6 +16,7 @@ export function RoundScreen() {
       <div class="roundbar">
         <IconButton label="Home" onClick={() => { leaveRound(); screen.value = 'home'; }}>🏠</IconButton>
         <Stars n={r.stars} />
+        <GoalBar />
         <BoltPile />
       </div>
       <main class="card">

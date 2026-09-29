@@ -151,3 +151,14 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .mod-tile.afford{border-color:#ffc53d;animation:tilepulse 1.2s infinite}
 @keyframes tilepulse{50%{box-shadow:0 0 0 7px #ffc53d55,0 5px 0 #0007}}
 .wiggle{animation:shake .4s}
+
+/* ---------- Goal bar ---------- */
+.goalchip{display:flex;align-items:center;gap:8px;background:#000c;color:#fff;border-radius:999px;padding:4px 14px 4px 6px;font:900 calc(18px*var(--u)) Nunito,sans-serif;min-width:0;flex:0 1 auto;height:calc(52px*var(--u))}
+.goalchip .gi{width:calc(42px*var(--u));height:calc(42px*var(--u));flex:none;display:block}
+.goalchip .gi svg{width:100%;height:100%}
+.goalchip .track{width:calc(90px*var(--u));min-width:30px;flex:0 1 auto;height:12px;border-radius:6px;background:#fff3;overflow:hidden}
+.goalchip .track i{display:block;height:100%;background:var(--yellow)}
+.goalchip .num{white-space:nowrap}
+.goalchip.ready{animation:pulse 1s infinite}
+.goalchip.done{font-size:calc(28px*var(--u));padding:4px 14px}
+@media (max-width:430px){.goalchip .track{display:none}}

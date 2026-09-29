@@ -10,7 +10,7 @@ import { leaveRound, round, startRound } from './round';
 
 export function EndOverlay() {
   const r = round.value!;
-  const lines: Phrase[] = ['You earned 3 Bolts!', ...smallestFirst(r.events).flatMap(eventLines)];
+  const lines: Phrase[] = ['You earned 3 Bolts!', ...smallestFirst(r.events).flatMap(eventLines), ...(r.canBuild ? (['You can build something new!'] as const) : [])];
   useEffect(() => {
     sFanfare();
     [0.6, 0.75, 0.9].forEach(sClink);
@@ -22,6 +22,7 @@ export function EndOverlay() {
       <div class="bigpile"><Bolt size={80} /><span>{game.value.bolts}</span></div>
       <div class="lines">{lines.map(l => <div key={l}>{l}</div>)}</div>
       <div class="btns">
+        <button class={`big-btn garage ${r.canBuild ? 'pulse' : ''}`} aria-label="Garage" onClick={() => { leaveRound(); screen.value = 'garage'; }}><span class="e">🔧</span></button>
         <button class="big-btn go" aria-label="Play again" onClick={() => startRound(r.mode)}><span class="e">▶</span></button>
       </div>
       <IconButton label="Home" onClick={() => { leaveRound(); screen.value = 'home'; }}>🏠</IconButton>
