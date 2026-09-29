@@ -2,3 +2,5 @@
 .claude/skills/
 .devin/
 .windsurf/
+node_modules/
+dist/

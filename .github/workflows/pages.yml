@@ -22,8 +22,20 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - name: Build site
-        run: mkdir _site && cp monster-truck-money.html _site/index.html
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: npx vite build
+      # The old app stays at the main URL; the new build is a preview under next/ until cutover
+      - name: Assemble site
+        run: |
+          mkdir _site
+          cp monster-truck-money.html _site/index.html
+          cp -R dist _site/next
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
