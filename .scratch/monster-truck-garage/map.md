@@ -25,6 +25,7 @@ A build-ready spec (`.scratch/monster-truck-garage/spec.md`) for the next versio
 - [Garage economy: starter Trucks, Mods and Reward Tokens](issues/03-garage-economy.md): Rounds of 5 earn a flat 3 Bolts; 3 switchable Bodies; 5 Slots × 3 Mods at 3/9/18 Bolts (about 50 Rounds for everything); no gating; one-tap final unlocks; a goal bar during Rounds.
 - [How Game Modes and Levels progress automatically](issues/04-mode-and-level-progression.md): Pay the Garage renamed Pay the Shop; modes open in a chain at Level 2; he picks the mode; each mode has its own Level, raised by Mastery (8 of the last 10 right first try, no help) and never lowered; smaller ranges, spoken choices and running totals, a new Help me pay; a level-up voice line plus an introduction card for the new money.
 - [Choose the stack](issues/05-choose-stack.md): Vite + Preact + strict TS, fresh build replacing the old app; `localStorage` behind an async seam; precached PWA with `autoUpdate` but no dependence on the service worker; typed phrase list with committed clips and a build that fails on a missing clip; Vitest for the logic (ADR 0001).
+- [Prototype the Truck art and the Garage screen](issues/06-truck-art-and-garage-screen.md): "Tap the truck" layout with a hotspot per Slot and a Mod sheet (bottom in portrait, side in landscape); a 3D Truck in three.js with a 360° turntable and camera moves per Slot; the "Real" look built in code (extruded profile, one painted canvas texture, detailed chassis and wheels); adds three.js to ADR 0001's stack.
 
 ## Not yet specified
 
