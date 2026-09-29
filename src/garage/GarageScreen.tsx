@@ -1,18 +1,27 @@
 // The Garage: "Tap the truck". The 3D Truck fills the stage with a hotspot on each Slot's part; tapping one
-// swings the camera there and opens that Slot's sheet of 4 Mods (bottom sheet in portrait, side panel in landscape).
+// swings the camera there and opens that Slot's sheet of 5 Mods (bottom sheet in portrait, side panel in landscape).
+// Along the bottom, the Body switcher shows every Body, the locked ones with their Bolt price. 📸 Show Off puts
+// the Truck on stage.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { HORNS, sClink, sNope } from '../audio/sfx';
-import { celebrateUnlock } from '../celebrate/garageShow';
+import { celebrateBody, celebrateUnlock } from '../celebrate/garageShow';
 import { game } from '../game/store';
+import { fmt } from '../money/money';
 import { startRound } from '../round/round';
 import { Bolt, BoltPile, IconButton } from '../ui/bits';
 import { say } from '../voice/say';
-import { BODY_NAMES, modId, modName, SLOTS, slotById, type Rung, type SlotId } from './catalog';
-import { PRICES } from './economy';
-import { canAfford, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, slotHasAffordable, stepBody, tapMod } from './garage';
+import { BodyArt } from './BodyArt';
+import { bodyItem, BODY_IDS, BODY_NAMES, isStarter, LEGENDARY, modId, modName, RUNGS, SLOTS, slotById, TOP, type BodyId, type Rung, type SlotId } from './catalog';
+import { Checkout } from './Checkout';
+import { CASH_PRICES, PRICES } from './economy';
+import {
+  buyLegendary, canAfford, canAffordBody, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, owns, slotHasAffordable,
+  stepBody, tapBody, tapMod, waitingFor, waitLines,
+} from './garage';
 import { GoalBar } from './GoalBar';
 import { PartIcon } from './icons';
+import { ShowOff } from './show/ShowOff';
 import { GarageStage } from './three/stage';
 
 export function GarageScreen() {
@@ -20,6 +29,8 @@ export function GarageScreen() {
   const hots = useRef<Partial<Record<SlotId, HTMLButtonElement | null>>>({});
   const [stage, setStage] = useState<GarageStage | null>(null);
   const [sheet, setSheet] = useState<SlotId | null>(null);
+  const [checkout, setCheckout] = useState<SlotId | null>(null);
+  const [showing, setShowing] = useState(false);
   const [wiggle, setWiggle] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false); // only for the length of an unlock jump
   const body = currentBody(), f = currentFit();
@@ -50,6 +61,16 @@ export function GarageScreen() {
   }
   function closeSheet() { setSheet(null); stage?.focus(null); }
 
+  function block(ms: number) {
+    setBlocked(true);
+    setTimeout(() => setBlocked(false), ms);
+  }
+  function nope(key: string) {
+    sNope();
+    setWiggle(key);
+    setTimeout(() => setWiggle(null), 450);
+  }
+
   function tap(slot: SlotId, rung: Rung) {
     const result = tapMod(slot, rung);
     if (result === 'fitted') {
@@ -57,46 +78,99 @@ export function GarageScreen() {
       else { sClink(); void say(modName(slot, rung)); }
     } else if (result === 'unlocked') {
       const r = rung as 1 | 2 | 3;
-      if (!stage) return;
-      const ms = celebrateUnlock(stage, stageEl.current!, slot, r, gotLine(modId(slot, r)));
-      setBlocked(true);
-      setTimeout(() => setBlocked(false), ms);
+      if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, r, gotLine(modId(slot, r))));
+    } else if (result === 'checkout') {
+      setCheckout(slot);
+    } else if (result === 'waiting') {
+      nope(`${slot}:${rung}`);
+      void say(...waitLines(slot, waitingFor(slot)!));
     } else {
-      sNope();
+      nope(`${slot}:${rung}`);
       void say(...needLines(modId(slot, rung as 1 | 2 | 3)));
-      setWiggle(`${slot}:${rung}`);
-      setTimeout(() => setWiggle(null), 450);
     }
+  }
+
+  function paid(slot: SlotId, cents: number) {
+    buyLegendary(slot, cents);
+    setCheckout(null);
+    if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, LEGENDARY, gotLine(modId(slot, LEGENDARY))));
+  }
+
+  function tapBodyChip(b: BodyId) {
+    const result = tapBody(b);
+    if (result === 'switched') void say(BODY_NAMES[b]);
+    else if (result === 'bought') { if (!isStarter(b) && stage) block(celebrateBody(stage, stageEl.current!, gotLine(bodyItem(b)))); }
+    else { nope(`body:${b}`); if (!isStarter(b)) void say(...needLines(bodyItem(b))); }
+  }
+
+  function startShow() {
+    closeSheet();
+    setShowing(true);
+    stage?.show(true);
+  }
+  function endShow() {
+    setShowing(false);
+    stage?.show(false);
   }
 
   const bodyStep = (d: 1 | -1) => { stepBody(d); void say(BODY_NAMES[currentBody()]); };
 
   return (
-    <div class={`screen garage-screen ${sheet ? 'open' : ''}`}>
+    <div class={`screen garage-screen ${sheet ? 'open' : ''} ${showing ? 'showing' : ''}`}>
       <header class="garage-hud">
         <BoltPile count={game.value.bolts} />
         <GoalBar />
         <div class="spacer" />
+        <IconButton label="Show Off" class="show" onClick={startShow}>📸</IconButton>
         <IconButton label="Home" onClick={() => (screen.value = 'home')}>🏠</IconButton>
         <IconButton label="Play" class="go" onClick={() => startRound(game.value.lastMode)}>▶</IconButton>
       </header>
       <div class="garage-stage" ref={stageEl}>
         <canvas ref={canvas} />
-        <div class="garage-overlay">
-          <div class="bodyname">{BODY_NAMES[body]}</div>
-          <button class="arrow l" aria-label="Previous truck" onClick={() => bodyStep(-1)}>◀</button>
-          <button class="arrow r" aria-label="Next truck" onClick={() => bodyStep(1)}>▶</button>
-          {SLOTS.map(s => (
-            <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${sheet === s.id ? 'on' : ''} ${slotHasAffordable(s.id) ? 'aff' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
-          ))}
-        </div>
+        {showing && stage ? <ShowOff stage={stage} canvas={canvas.current!} stageEl={stageEl.current!} body={body} horn={f.horn} onClose={endShow} /> : (
+          <div class="garage-overlay">
+            <div class="bodyname">{BODY_NAMES[body]}</div>
+            <button class="arrow l" aria-label="Previous truck" onClick={() => bodyStep(-1)}>◀</button>
+            <button class="arrow r" aria-label="Next truck" onClick={() => bodyStep(1)}>▶</button>
+            {SLOTS.map(s => (
+              <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${sheet === s.id ? 'on' : ''} ${slotHasAffordable(s.id) ? 'aff' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
+            ))}
+            <div class="bodystrip">
+              {BODY_IDS.map(b => {
+                const mine = owns(b), price = isStarter(b) ? 0 : PRICES.bodies[b];
+                const cls = b === body ? 'on' : mine ? 'owned' : canAffordBody(b) ? 'afford' : 'locked';
+                return (
+                  <button key={b} class={`body-chip ${cls} ${wiggle === `body:${b}` ? 'wiggle' : ''}`} aria-label={BODY_NAMES[b]} onClick={() => tapBodyChip(b)}>
+                    <BodyArt body={b} color={mine ? '#e63946' : '#6b7385'} />
+                    {!mine && <span class="cost"><Bolt size={18} />{price}</span>}
+                    {cls === 'locked' && <span class="lock">🔒</span>}
+                    {!isStarter(b) && goal() === bodyItem(b) && <span class="flag">🎯</span>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
-      {sheet && (
+      {sheet && !showing && (
         <div class="sheet">
           <div class="sheethead"><span>{slotById(sheet).icon}</span>{slotById(sheet).name}<button class="x" aria-label="Close" onClick={closeSheet}>✕</button></div>
           <div class="sheettiles">
-            {([0, 1, 2, 3] as const).map(r => {
-              const un = isUnlocked(sheet, r), fitted = f[sheet] === r, aff = canAfford(sheet, r), price = r ? PRICES[r] : 0;
+            {([0, ...RUNGS] as const).map(r => {
+              const un = isUnlocked(sheet, r), fitted = f[sheet] === r, legend = r === LEGENDARY;
+              if (legend) {
+                const wait = waitingFor(sheet), cls = fitted ? 'fitted' : un ? 'owned' : wait ? 'locked' : 'open';
+                return (
+                  <button key={r} class={`mod-tile legend ${cls} ${wiggle === `${sheet}:${r}` ? 'wiggle' : ''}`} aria-label={modName(sheet, r)} onClick={() => tap(sheet, r)}>
+                    <div class="ico"><PartIcon slot={sheet} rung={r} /></div>
+                    <div class="nm">{modName(sheet, r)}</div>
+                    {!un && <div class="cost money">{fmt(CASH_PRICES[sheet])}</div>}
+                    {fitted && <div class="check">✓</div>}
+                    {wait && <><div class="lock">🔒</div><div class="wait" aria-label={`Needs ${modName(sheet, TOP)}`}><PartIcon slot={sheet} rung={TOP} /></div></>}
+                  </button>
+                );
+              }
+              const aff = canAfford(sheet, r), price = r ? PRICES.rungs[r] : 0;
               const cls = fitted ? 'fitted' : un ? 'owned' : aff ? 'afford' : 'locked';
               return (
                 <button key={r} class={`mod-tile ${cls} ${wiggle === `${sheet}:${r}` ? 'wiggle' : ''}`} aria-label={modName(sheet, r)} onClick={() => tap(sheet, r)}>
@@ -105,13 +179,14 @@ export function GarageScreen() {
                   {!un && <div class="cost"><Bolt size={20} />{price}</div>}
                   {fitted && <div class="check">✓</div>}
                   {cls === 'locked' && <><div class="lock">🔒</div><div class="prog"><i style={{ width: `${(game.value.bolts / price) * 100}%` }} /></div></>}
-                  {r > 0 && goal() === modId(sheet, r as 1 | 2 | 3) && <div class="flag">🎯</div>}
+                  {r !== 0 && goal() === modId(sheet, r) && <div class="flag">🎯</div>}
                 </button>
               );
             })}
           </div>
         </div>
       )}
+      {checkout && <Checkout slot={checkout} onPaid={cents => paid(checkout, cents)} onClose={() => setCheckout(null)} />}
       {blocked && <div class="blocker" />}
     </div>
   );

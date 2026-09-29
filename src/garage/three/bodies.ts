@@ -43,6 +43,25 @@ export const BODIES: Record<BodyId, BodyShape> = {
     win: 'M196,-64 L232,-64 L248,-38 L196,-38 Z', shield: [[238, -72], [262, -36]], rear: null,
     head: [354, -12], roof: [190, 236, -72], hot: { paint: [160, -20], decals: [290, -15], horn: [214, -110] },
   },
+  firetruck: {
+    W: 1.8, wheels: [100, 290], front: 356, back: 34, mid: 190,
+    path: 'M34,0 L34,-98 L252,-98 L258,-116 L318,-116 L348,-66 L356,-60 L356,0 Z',
+    win: 'M270,-106 L314,-106 L336,-68 L270,-68 Z', shield: [[318, -116], [348, -66]], rear: null,
+    head: [350, -34], roof: [258, 318, -116], hot: { paint: [130, -46], decals: [220, -44], horn: [288, -152] },
+  },
+  schoolbus: {
+    W: 1.8, wheels: [96, 300], front: 368, back: 26, mid: 190,
+    path: 'M26,0 L26,-122 L318,-122 L340,-70 L368,-64 L368,0 Z',
+    win: 'M40,-112 L84,-112 L84,-82 L40,-82 Z M92,-112 L136,-112 L136,-82 L92,-82 Z M144,-112 L188,-112 L188,-82 L144,-82 Z M196,-112 L240,-112 L240,-82 L196,-82 Z M248,-112 L292,-112 L292,-82 L248,-82 Z',
+    shield: [[318, -122], [340, -70]], rear: null,
+    head: [362, -40], roof: [40, 318, -122], hot: { paint: [110, -50], decals: [230, -50], horn: [200, -158] },
+  },
+  jeep: {
+    W: 1.7, wheels: [106, 290], front: 340, back: 56, mid: 200,
+    path: 'M56,0 L56,-84 L68,-128 L232,-128 L242,-80 L340,-74 L340,0 Z',
+    win: 'M80,-118 L146,-118 L146,-88 L74,-88 Z M156,-118 L222,-118 L230,-88 L156,-88 Z', shield: [[232, -128], [242, -80]], rear: [[56, -84], [68, -128]],
+    head: [334, -44], roof: [68, 232, -128], hot: { paint: [150, -44], decals: [290, -40], horn: [150, -166] },
+  },
 };
 
 export const U = 100;
@@ -50,8 +69,8 @@ export const toX = (x: number) => (x - 200) / U;
 export const toY = (y: number) => -y / U;
 
 /** Tire radius (profile units) and width (scene units) per Tires Rung. */
-export const TIRE_R = [30, 38, 48, 52] as const;
-export const TIRE_W = [0.32, 0.4, 0.5, 0.56] as const;
+export const TIRE_R = [30, 38, 48, 52, 56] as const;
+export const TIRE_W = [0.32, 0.4, 0.5, 0.56, 0.64] as const;
 /** Ride height per tire radius. */
 export const LIFT = 1.35;
 

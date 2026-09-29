@@ -38,12 +38,13 @@ export const sClink = (when = 0) => { tone(1800, 0.08, 'triangle', when, 0.1); t
 export const sCount = (i: number) => tone(400 + i * 60, 0.12, 'triangle', 0, 0.1);
 export const sFanfare = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', i * 0.12, 0.14));
 
-/** The four Horn Mods, by Rung: Beep, Honk, Air Horn, Roar. */
+/** The five Horn Mods, by Rung: Beep, Honk, Air Horn, Roar, Train Horn. */
 export const HORNS: readonly (() => void)[] = [
   () => tone(880, 0.18, 'square', 0, 0.2),
   () => { tone(392, 0.45, 'sawtooth', 0, 0.14); tone(494, 0.45, 'sawtooth', 0, 0.14); },
   () => { tone(233, 1, 'sawtooth', 0, 0.16); tone(311, 1, 'sawtooth', 0, 0.16); tone(370, 1, 'sawtooth', 0, 0.1); },
   () => { tone(110, 1.2, 'sawtooth', 0, 0.3, 45); tone(160, 1.1, 'square', 0, 0.1, 60); noise({ dur: 1.1, f: 500 }); },
+  () => { for (const w of [0, 0.75]) for (const f of [185, 233, 277, 370]) tone(f, w ? 1.3 : 0.55, 'sawtooth', w, 0.09); }, // a three-chime train horn, twice
 ];
 export const sNope = () => tone(220, 0.22, 'square', 0, 0.08, 160);
 
@@ -61,3 +62,13 @@ export const sThud = () => { tone(90, 0.35, 'sine', 0, 0.4, 40); noise({ dur: 0.
 export const sHonk = () => { tone(392, 0.4, 'sawtooth', 0, 0.1); tone(494, 0.4, 'sawtooth', 0, 0.1); };
 export const sBoing = () => tone(260, 0.25, 'sine', 0, 0.2, 780);
 export const sPop = () => { noise({ dur: 0.15, vol: 0.35, type: 'highpass', f: 1500 }); noise({ dur: 0.6, vol: 0.08, type: 'highpass', f: 4000, when: 0.1, beat: 0.06 }); };
+
+// ---------- Show Off ----------
+/** A crowd cheering: a swell of noise with whistles on top. */
+export const sCheer = () => {
+  noise({ dur: 2.2, vol: 0.22, type: 'bandpass', f: 900, f2: 1400, beat: 0.04 });
+  noise({ dur: 2.4, vol: 0.12, type: 'bandpass', f: 2400 });
+  tone(1900, 0.5, 'sine', 0.3, 0.05, 2600); tone(2200, 0.4, 'sine', 0.9, 0.04, 1600);
+};
+/** The camera shutter: a click and a snap. */
+export const sShutter = () => { noise({ dur: 0.05, vol: 0.5, type: 'highpass', f: 3000 }); noise({ dur: 0.09, vol: 0.35, type: 'highpass', f: 1800, when: 0.08 }); };

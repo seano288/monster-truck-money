@@ -1,5 +1,6 @@
 // The Garage stage: the Truck on a turntable he can spin, a camera that swings to a Slot's part,
-// hotspots that follow the parts, a slow spin after 12 s idle, and the Truck's jumps.
+// hotspots that follow the parts, a slow spin after 12 s idle, and the Truck's jumps. For Show Off it dims the
+// lights, puts a spotlight on the Truck and spins the turntable, and takes the photo on a bright background.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -35,6 +36,11 @@ export class GarageStage {
   private sheetOpen = false;
   private resizeObs: ResizeObserver;
   private lastLand: boolean | null = null;
+  /** The table, its ring and the Truck: this is what spins in the show. */
+  private turntable = new THREE.Group();
+  private lights: { hemi: THREE.HemisphereLight; sun: THREE.DirectionalLight; rim: THREE.DirectionalLight; spot: THREE.SpotLight; beam: THREE.Mesh; floor: THREE.Mesh };
+  private showing = false;
+  private lastFrame = performance.now();
   /** Called every frame with where each Slot's hotspot goes (in stage pixels). */
   onHotspots: ((places: Record<SlotId, HotspotPlace>) => void) | null = null;
 
@@ -50,17 +56,23 @@ export class GarageStage {
     scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture;
     pm.dispose();
     scene.environmentIntensity = 0.9;
-    scene.add(new THREE.HemisphereLight(0xcfe0ff, 0x1a1a26, 0.6));
+    const hemi = new THREE.HemisphereLight(0xcfe0ff, 0x1a1a26, 0.6); scene.add(hemi);
     const sun = new THREE.DirectionalLight(0xffffff, 2.6); sun.position.set(3, 7, 4); sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048); Object.assign(sun.shadow.camera, { left: -4, right: 4, top: 4, bottom: -4, near: 1, far: 20 }); sun.shadow.bias = -0.0005;
     scene.add(sun);
     const rim = new THREE.DirectionalLight(0x6f8cff, 1.3); rim.position.set(-4, 3, -5); scene.add(rim);
+    const spot = new THREE.SpotLight(0xfff4dc, 90, 16, 0.42, 0.45, 1.2); spot.position.set(0, 8, 1.5); spot.target.position.set(0, 0.6, 0);
+    spot.castShadow = true; spot.shadow.mapSize.set(1024, 1024); spot.visible = false; scene.add(spot, spot.target);
+    const beam = new THREE.Mesh(new THREE.ConeGeometry(3.3, 8, 48, 1, true).translate(0, -4, 0), new THREE.MeshBasicMaterial({ color: 0xfff4dc, transparent: true, opacity: 0.07, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    beam.position.copy(spot.position); beam.lookAt(spot.target.position); beam.rotateX(-Math.PI / 2); beam.visible = false; scene.add(beam);
     const floor = new THREE.Mesh(new THREE.CircleGeometry(20, 64), new THREE.MeshStandardMaterial({ color: 0x1d2233, roughness: 0.95 }));
     floor.rotation.x = -Math.PI / 2; floor.position.y = -0.12; floor.receiveShadow = true; scene.add(floor);
+    this.lights = { hemi, sun, rim, spot, beam, floor };
+    scene.add(this.turntable);
     const table = new THREE.Mesh(new THREE.CylinderGeometry(3.2, 3.3, 0.12, 72), new THREE.MeshStandardMaterial({ color: 0x3a4256, metalness: 0.6, roughness: 0.45 }));
-    table.position.y = -0.06; table.receiveShadow = true; scene.add(table);
+    table.position.y = -0.06; table.receiveShadow = true; this.turntable.add(table);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(3.22, 0.03, 8, 96), new THREE.MeshStandardMaterial({ color: 0xffc53d, emissive: 0xffc53d, emissiveIntensity: 1.2 }));
-    ring.rotation.x = -Math.PI / 2; scene.add(ring);
+    ring.rotation.x = -Math.PI / 2; this.turntable.add(ring);
 
     const c = (this.controls = new OrbitControls(this.camera, canvas));
     c.target.set(0, 0.85, 0); c.enablePan = false; c.enableDamping = true;
@@ -81,9 +93,9 @@ export class GarageStage {
     const sig = body + JSON.stringify(fit);
     if (sig === this.sig) return;
     this.sig = sig;
-    if (this.truck) { this.scene.remove(this.truck.group); this.truck.dispose(); }
+    if (this.truck) { this.turntable.remove(this.truck.group); this.truck.dispose(); }
     this.truck = buildTruck(body, fit);
-    this.scene.add(this.truck.group);
+    this.turntable.add(this.truck.group);
   }
 
   /** Swing the camera to a Slot's part and shift the Truck clear of its sheet; null goes back to the whole Truck. */
@@ -101,6 +113,54 @@ export class GarageStage {
   /** Play one of the Truck's jumps. */
   play(kind: Move) { this.move = { kind, t0: performance.now() }; }
 
+  /** Show Off: the lights dim, a spotlight falls on the Truck and the turntable spins slowly. Off puts the Garage back. */
+  show(on: boolean) {
+    this.showing = on;
+    this.light(on);
+    if (!on) this.turntable.rotation.y = 0;
+    this.lastTouch = performance.now();
+    const sp = new THREE.Spherical().setFromVector3(this.camera.position.clone().sub(this.controls.target));
+    const from = { th: sp.theta, phi: sp.phi, r: sp.radius };
+    this.tween = { t0: performance.now(), dur: 900, from, to: on ? { th: Math.atan2(0.75, 1), phi: 1.3, r: this.fitDist(false) * 1.12 } : { ...from, r: this.fitDist(false) } };
+  }
+
+  /** Is this point on the page on the Truck? */
+  hitsTruck(clientX: number, clientY: number): boolean {
+    if (!this.truck) return false;
+    const rc = this.stage.getBoundingClientRect(), ray = new THREE.Raycaster();
+    ray.setFromCamera(new THREE.Vector2(((clientX - rc.left) / rc.width) * 2 - 1, -((clientY - rc.top) / rc.height) * 2 + 1), this.camera);
+    return ray.intersectObject(this.truck.group, true).length > 0;
+  }
+
+  /**
+   * The photo: the Truck as it is now, on a bright show background with the lights up, and his Body's name on it.
+   * It's rendered and read back in one go, so the drawing buffer doesn't need preserving, and it's synchronous so
+   * the share sheet can still open inside the tap.
+   */
+  photo(title: string): File {
+    const { scene, lights: L, renderer } = this, was = { bg: scene.background, fog: scene.fog };
+    const bright = showBackground();
+    scene.background = bright; scene.fog = null; scene.environmentIntensity = 0.9;
+    L.floor.visible = L.beam.visible = L.spot.visible = false;
+    L.hemi.intensity = 0.9; L.sun.intensity = 2.6; L.rim.intensity = 1.3;
+    renderer.render(scene, this.camera);
+    const src = renderer.domElement, out = document.createElement('canvas');
+    out.width = src.width; out.height = src.height;
+    const c = out.getContext('2d')!;
+    c.drawImage(src, 0, 0);
+    const h = out.height, fs = Math.round(Math.min(out.width * 0.09, h * 0.11));
+    c.font = `${fs}px Bungee, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
+    c.lineWidth = fs * 0.22; c.strokeStyle = '#000'; c.strokeText(title, out.width / 2, h - fs * 0.6);
+    c.fillStyle = '#ffd23f'; c.fillText(title, out.width / 2, h - fs * 0.6);
+    scene.background = was.bg; scene.fog = was.fog;
+    bright.dispose();
+    L.floor.visible = true;
+    this.light(this.showing);
+    const bin = atob(out.toDataURL('image/png').split(',')[1]!), bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return new File([bytes], `${title}.png`, { type: 'image/png' });
+  }
+
   /** Where on the page the Truck is (for sparks). */
   truckPoint(): { x: number; y: number } {
     const v = new THREE.Vector3(0, 1, 0).project(this.camera), rc = this.stage.getBoundingClientRect();
@@ -113,6 +173,14 @@ export class GarageStage {
     this.controls.dispose();
     if (this.truck) this.truck.dispose();
     this.renderer.dispose();
+  }
+
+  private light(show: boolean) {
+    const L = this.lights, bg = show ? 0x05060a : 0x161b28;
+    L.hemi.intensity = show ? 0.06 : 0.6; L.sun.intensity = show ? 0.25 : 2.6; L.rim.intensity = show ? 0.6 : 1.3;
+    L.spot.visible = L.beam.visible = show;
+    this.scene.environmentIntensity = show ? 0.35 : 0.9;
+    this.scene.background = new THREE.Color(bg); (this.scene.fog as THREE.Fog).color.set(bg);
   }
 
   /** Distance that keeps the whole Truck in the part of the stage the sheet leaves free. */
@@ -152,7 +220,8 @@ export class GarageStage {
       camera.position.setFromSpherical(new THREE.Spherical(a.r + (b.r - a.r) * e, a.phi + (b.phi - a.phi) * e, a.th + (b.th - a.th) * e)).add(controls.target);
       if (k === 1) this.tween = null;
     }
-    controls.autoRotate = !this.sheetOpen && !this.tween && now - this.lastTouch > IDLE_SPIN_MS;
+    controls.autoRotate = !this.showing && !this.sheetOpen && !this.tween && now - this.lastTouch > IDLE_SPIN_MS;
+    if (this.showing) this.turntable.rotation.y += (now - this.lastFrame) * 0.0003; // about one turn in 20 s
     controls.update();
     const land = this.stage.clientWidth > this.stage.clientHeight, tx = this.sheetOpen && land ? 0.24 : 0, ty = this.sheetOpen && !land ? 0.23 : 0;
     if (Math.abs(this.off.x - tx) + Math.abs(this.off.y - ty) > 0.001) { this.off.x += (tx - this.off.x) * 0.12; this.off.y += (ty - this.off.y) * 0.12; this.applyOffset(); }
@@ -174,10 +243,12 @@ export class GarageStage {
       }
       g.position.y = y;
       for (const w of t.anim.spin) w.rotation.z -= 0.06;
+      if (t.anim.lasers) t.anim.lasers.rotation.y = now / 700;
       if (t.anim.glow) { const p = 0.65 + 0.35 * Math.sin(now / 220); t.anim.glow.m.opacity = p; t.anim.glow.l.intensity = 4 * p; }
       t.anim.repaint?.(now);
       this.placeHotspots(t);
     }
+    this.lastFrame = now;
     this.renderer.render(this.scene, camera);
     this.raf = requestAnimationFrame(this.loop);
   };
@@ -195,4 +266,19 @@ export class GarageStage {
     }
     this.onHotspots(out);
   }
+}
+
+/** A bright stage backdrop for the photo: sun rays on a yellow-to-orange glow. */
+function showBackground() {
+  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
+  const c = cv.getContext('2d')!, g = c.createRadialGradient(256, 220, 20, 256, 256, 360);
+  g.addColorStop(0, '#fff6b0'); g.addColorStop(0.45, '#ffc53d'); g.addColorStop(1, '#ff6a00');
+  c.fillStyle = g; c.fillRect(0, 0, 512, 512);
+  c.fillStyle = 'rgba(255,255,255,.18)';
+  for (let i = 0; i < 16; i += 2) {
+    const a = (i / 16) * Math.PI * 2, b = ((i + 1) / 16) * Math.PI * 2;
+    c.beginPath(); c.moveTo(256, 220); c.lineTo(256 + Math.cos(a) * 800, 220 + Math.sin(a) * 800); c.lineTo(256 + Math.cos(b) * 800, 220 + Math.sin(b) * 800); c.fill();
+  }
+  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
+  return t;
 }

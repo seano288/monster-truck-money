@@ -9,22 +9,24 @@ _Avoid_: Pay the Garage (it clashes with the Garage, which uses Bolts, not money
 
 **Round**: A short run of problems in one Game Mode that ends in a reward.
 
-**Bolt**: What the player earns by finishing Rounds and spends to unlock Mods. It is deliberately *not* money, so spending it never asks the player to count cash.
+**Bolt**: What the player earns by finishing Rounds and spends to unlock Mods and buy Bodies. It is deliberately *not* money, so spending it never asks the player to count cash. A Bolt never buys a Legendary Mod.
 _Avoid_: Reward Token, coin, star, point
 
 **Truck**: The player's one monster truck: a Body with Mods fitted to it. A player has one Truck at a time.
 
-**Body**: The basic shape of the Truck, chosen from a few starter shapes. The player can switch Body at any time, and each Body remembers which Mods were fitted to it.
+**Body**: The basic shape of the Truck. There are starter Bodies, which the player picks from on first launch and owns from the start, and Bodies bought with Bolts. The player can switch between owned Bodies at any time, and each Body remembers which Mods were fitted to it.
 _Avoid_: Starter Truck, model
 
 **Slot**: One place on the Truck that holds a single Mod at a time, such as Tires or Paint.
 _Avoid_: Category, part type
 
-**Mod**: A part or look that goes in one Slot (tires, paint, flames, lights and so on). A Mod is unlocked once, by spending Bolts, and cooler Mods cost more. After that it can be fitted to any Body or taken off freely.
+**Mod**: A part or look that goes in one Slot (tires, paint, flames, lights and so on). A Mod is unlocked once, by spending Bolts (or money, for a Legendary), and cooler Mods cost more. After that it can be fitted to any Body or taken off freely.
 
-**Rung**: A Mod's step within its Slot: first, second or top. A higher Rung looks cooler and costs more. Each Slot also has a free default that is not a Rung.
+**Rung**: A Mod's step within its Slot: first, second, top, then Legendary. A higher Rung looks cooler and costs more. The first three are paid in Bolts; the Legendary Rung is paid in money, tapped into the Pay the Shop tray to the exact price, and opens for purchase once the top Rung in its Slot is unlocked. Each Slot also has a free default that is not a Rung.
 _Avoid_: Tier, level (Level means how hard a Game Mode is)
 
-**Goal**: The one locked Mod the player is saving Bolts toward, shown as a progress bar while they play. It is the cheapest locked Mod unless the player taps another locked Mod to choose it.
+**Goal**: The one locked Mod or locked Body the player is saving Bolts toward, shown as a progress bar while they play. It is the cheapest one unless the player taps another locked Mod or Body to choose it. A Legendary is never the Goal, because it is bought with money.
 
-**Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost.
+**Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost (or money price, for a Legendary), and the Bodies owned and still to buy.
+
+**Show Off**: The Garage's stage moment: the current Truck spins under a spotlight while the crowd cheers, performs a move when tapped, and can be saved as a photo.

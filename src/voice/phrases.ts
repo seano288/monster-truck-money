@@ -1,6 +1,7 @@
 // The single typed list of everything the game says. tools/make_voice.py records a clip for each entry,
 // and the build fails if any is missing. say() accepts only these phrases (and amounts, joined from pieces).
-import { BODY_NAMES, SLOTS, type BodyName, type ModName, type SlotName } from '../garage/catalog';
+import { BODY_NAMES, BOUGHT_BODIES, SLOTS, type BodyName, type BoughtBody, type ModName, type SlotName } from '../garage/catalog';
+import { PRICES } from '../garage/economy';
 import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
 import { MODE_NAMES, type ModeName } from '../modes/ids';
 import { SHOP_ITEMS, type ShopItem } from '../modes/pay/pay';
@@ -51,26 +52,38 @@ export const LOCKED_HINTS = ['Learn more coins to open this!', 'Count more cash 
 
 // ---------- Garage ----------
 const GARAGE = ['Garage!', 'You built everything!', 'You can build something new!', 'Wow!', "That's the best one!"] as const;
-/** The 15 Mods that cost Bolts (not the free defaults). */
-type RungModName = Exclude<ModName, (typeof SLOTS)[number]['mods'][0]>;
+type Mods<I extends number> = (typeof SLOTS)[number]['mods'][I];
+/** The 15 Mods that cost Bolts (not the free defaults or the Legendaries), the top ones, and the Legendaries. */
+type BoltModName = Mods<1 | 2 | 3>;
+type TopModName = Mods<3>;
+type LegendaryName = Mods<4>;
+type BoughtBodyName = (typeof BODY_NAMES)[BoughtBody];
 type BoltsPhrase = `You need 1 more Bolt.` | `You need ${number} more Bolts.`;
-type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName | `You got ${RungModName}!` | `You can get ${RungModName}!` | BoltsPhrase;
-export const MAX_PRICE = 18;
+type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName | `You got ${BoltModName | BoughtBodyName}!` | `You can get ${BoltModName | BoughtBodyName}!`
+  | `${LegendaryName} costs` | `You bought ${LegendaryName}!` | `Get ${TopModName} first!` | BoltsPhrase;
+/** The most Bolts anything costs. */
+export const MAX_PRICE = Math.max(...Object.values(PRICES.rungs), ...Object.values(PRICES.bodies));
 /** "You need 4 more Bolts." */
 export const needBolts = (n: number): BoltsPhrase => (n === 1 ? 'You need 1 more Bolt.' : `You need ${n} more Bolts.`);
 const garagePhrases = (): GaragePhrase[] => {
-  const rungMods = SLOTS.flatMap(s => s.mods.slice(1)) as RungModName[];
+  const boltMods = SLOTS.flatMap(s => s.mods.slice(1, 4)) as BoltModName[];
+  const legendaries = SLOTS.map(s => s.mods[4]), tops = SLOTS.map(s => s.mods[3]);
+  const bought = [...boltMods, ...BOUGHT_BODIES.map(b => BODY_NAMES[b])];
   return [
     ...GARAGE, ...Object.values(BODY_NAMES), ...SLOTS.map(s => s.name), ...SLOTS.flatMap(s => s.mods),
-    ...rungMods.map(m => `You got ${m}!` as const), ...rungMods.map(m => `You can get ${m}!` as const),
+    ...bought.map(m => `You got ${m}!` as const), ...bought.map(m => `You can get ${m}!` as const),
+    ...legendaries.map(m => `${m} costs` as const), ...legendaries.map(m => `You bought ${m}!` as const), ...tops.map(m => `Get ${m} first!` as const),
     ...Array.from({ length: MAX_PRICE }, (_, i) => needBolts(i + 1)),
   ];
 };
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | AmountPiece;
+// ---------- Show Off ----------
+const SHOW = ['Show time!', 'Say cheese!'] as const;
+
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | Of<typeof SHOW> | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
 export const PAY_PHRASES: readonly Phrase[] = [...buyPhrases(), 'It costs', 'Tap some money first!', 'Almost!', 'You need', 'more', 'Too much!', 'Take back', 'Tap a coin to hear its name.', 'Count more cash to open this!'];
 export const COUNT_PHRASES: readonly Phrase[] = ['How much money is this?', 'Not quite!', "Let's count together.", 'Tap a coin to hear its name.', 'Learn more coins to open this!'];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...SHOW, ...allAmountPieces()])];

@@ -34,7 +34,7 @@ export function helpPayCoins(price: number, bank: readonly MoneyKey[]): MoneyKey
 
 export type PayCheck = { kind: 'paid' } | { kind: 'empty' } | { kind: 'short' | 'over'; by: number };
 
-export function checkPay(p: PayProblem, tray: readonly MoneyKey[]): PayCheck {
+export function checkPay(p: Pick<PayProblem, 'price'>, tray: readonly MoneyKey[]): PayCheck {
   const paid = total(tray);
   if (!tray.length) return { kind: 'empty' };
   if (paid === p.price) return { kind: 'paid' };

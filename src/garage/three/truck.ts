@@ -1,6 +1,8 @@
 // Builds the Truck in the "Real" look, all in code: the Body's side profile extruded with rounded corners and
 // a clear-coat, one canvas texture for Paint and Decals projected from the side, a tube chassis with 4-link
 // suspension and coil-overs, lathe-turned tires with tread that grows per Mod, beadlock rims, and per-Body extras.
+// The Legendaries (Rung 4) go a step past the top Rung: gold spiked paddle tires, flaked gold paint, a skull with
+// wings, spinning lasers and a roof-top train horn.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
 import type { BodyId, Fit } from '../catalog';
@@ -19,11 +21,13 @@ const M = {
   shock: std(0xff5a1f, { roughness: 0.3, metalness: 0.5 }),
   frame: std(0x2b62d9, { roughness: 0.35, metalness: 0.4 }),
   liner: std(0x0b0b0c, { roughness: 1 }),
+  gold: std(0xffc21a, { roughness: 0.18, metalness: 1, emissive: 0x6a4a00, emissiveIntensity: 0.6 }),
 };
 const SHARED = new Set<THREE.Material>(Object.values(M));
 // Shell: R = corner rounding (profile units), bt/bs = bevel thickness/size
 const SH = { R: 9, bt: 0.07, bs: 0.06, seg: 5 };
-const RIM_C = [0xb9c0c8, 0xd8dde3, 0xffcc33, 0xff3df0] as const;
+const RIM_C = [0xb9c0c8, 0xd8dde3, 0xffcc33, 0xff3df0, 0xffd700] as const;
+
 
 const glowTex = (() => {
   if (typeof document === 'undefined') return null;
@@ -83,11 +87,13 @@ function seeded(seed: number) {
 
 // ---------- the build ----------
 export interface TruckAnim {
-  /** Mega Spikes wheels turn slowly. */
+  /** Mega Spikes and Monster Treads wheels turn slowly. */
   spin: THREE.Object3D[];
+  /** Laser Show beams sweep round. */
+  lasers: THREE.Object3D | null;
   /** Glow Under pulses. */
   glow: { m: THREE.MeshBasicMaterial; l: THREE.PointLight } | null;
-  /** Rainbow Chrome paint shimmers, so its canvas is redrawn each frame. */
+  /** Rainbow Chrome paint shimmers and Gold Flake twinkles, so its canvas is redrawn each frame. */
   repaint: ((t: number) => void) | null;
 }
 
@@ -108,7 +114,7 @@ class Builder {
   readonly own: THREE.Material[] = [];
   readonly truck = new THREE.Group();
   readonly body = new THREE.Group();
-  readonly anim: TruckAnim = { spin: [], glow: null, repaint: null };
+  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null };
 
   constructor(readonly bodyId: BodyId, readonly f: Fit) {
     this.B = BODIES[bodyId];
@@ -145,10 +151,10 @@ class Builder {
   }
 
   // --- wheels ---
-  rimMat(rung: number) { const c = RIM_C[rung as 0]; return rung === 3 ? this.glow(c, 1.4) : this.mat(std(c, { metalness: 0.9, roughness: 0.22 })); }
-  spikes(g: THREE.Group, r: number, w: number, n: number, size: number) {
+  rimMat(rung: number) { const c = RIM_C[rung as 0]; return rung === 4 ? M.gold : rung === 3 ? this.glow(c, 1.4) : this.mat(std(c, { metalness: 0.9, roughness: 0.22 })); }
+  spikes(g: THREE.Group, r: number, w: number, n: number, size: number, m: THREE.Material = M.chrome) {
     for (let i = 0; i < n; i++) for (const zz of [-w / 4, w / 4]) {
-      const a = ((i + (zz > 0 ? 0.5 : 0)) / n) * Math.PI * 2, c = new THREE.Mesh(new THREE.ConeGeometry(size * 0.3, size, 6), M.chrome);
+      const a = ((i + (zz > 0 ? 0.5 : 0)) / n) * Math.PI * 2, c = new THREE.Mesh(new THREE.ConeGeometry(size * 0.3, size, 6), m);
       c.position.set(Math.cos(a) * (r + size * 0.5), Math.sin(a) * (r + size * 0.5), zz); c.rotation.z = a - Math.PI / 2; g.add(c);
     }
   }
@@ -161,17 +167,21 @@ class Builder {
     return new THREE.LatheGeometry(p, seg).rotateX(Math.PI / 2);
   }
   wheel(rung: number, r: number, w: number) {
-    const g = new THREE.Group(), rimR = r * 0.6, n = [30, 20, 16, 16][rung]!, h = [0.022, 0.045, 0.075, 0.075][rung]!;
+    const g = new THREE.Group(), rimR = r * 0.6, n = [30, 20, 16, 16, 12][rung]!, h = [0.022, 0.045, 0.075, 0.075, 0.1][rung]!;
     g.add(new THREE.Mesh(this.tireGeo(r - 0.01, w, rimR, Math.min(0.09, w * 0.3)), M.rubber));
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2, rr = r + h / 2 - 0.015;
       if (rung === 0) {
         for (const zz of [-w / 4, w / 4]) { const aa = a + (zz > 0 ? Math.PI / n : 0), l = this.box(h, 0.07, w * 0.3, M.rubber, Math.cos(aa) * rr, Math.sin(aa) * rr, zz); l.rotation.z = aa; g.add(l); }
       } else for (const sd of [-1, 1]) { // chevron lugs
-        const l = this.box(h, [0, 0.08, 0.1, 0.11][rung]!, w * 0.52, M.rubber, Math.cos(a) * rr, Math.sin(a) * rr, sd * w * 0.23); l.rotation.set(sd * 0.5, 0, a, 'ZYX'); g.add(l);
+        const l = this.box(h, [0, 0.08, 0.1, 0.11, 0.15][rung]!, w * 0.52, M.rubber, Math.cos(a) * rr, Math.sin(a) * rr, sd * w * 0.23); l.rotation.set(sd * 0.5, 0, a, 'ZYX'); g.add(l);
       }
     }
     if (rung === 3) this.spikes(g, r + h, w, 16, 0.14);
+    if (rung === 4) { // Monster Treads: gold paddles across the tread and big gold spikes
+      for (let i = 0; i < n; i++) { const a = ((i + 0.5) / n) * Math.PI * 2, p = this.box(h * 0.7, 0.05, w * 0.96, M.gold, Math.cos(a) * (r + h * 0.35), Math.sin(a) * (r + h * 0.35), 0); p.rotation.z = a; g.add(p); }
+      this.spikes(g, r + h, w, 12, 0.2, M.gold);
+    }
     const rm = this.rimMat(rung);
     g.add(this.cyl(rimR, rimR, w * 0.86, rm, 0, 0, 0, 'z', 32));
     for (const s of [-1, 1]) {
@@ -196,8 +206,8 @@ class Builder {
     uv.needsUpdate = true;
     creaseNormals(geo, 40);
     const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
-    const chrome = f.paint === 3;
-    this.body.add(new THREE.Mesh(geo, this.mat(new THREE.MeshPhysicalMaterial({ map: tex, roughness: chrome ? 0.15 : 0.3, metalness: chrome ? 0.7 : 0.25, clearcoat: 1, clearcoatRoughness: 0.05 }))));
+    const chrome = f.paint === 3, gold = f.paint === 4;
+    this.body.add(new THREE.Mesh(geo, this.mat(new THREE.MeshPhysicalMaterial({ map: tex, roughness: gold ? 0.2 : chrome ? 0.15 : 0.3, metalness: gold ? 0.85 : chrome ? 0.7 : 0.25, clearcoat: 1, clearcoatRoughness: 0.05 }))));
     const wd = W + 2 * SH.bt + 0.02, wg = new THREE.ExtrudeGeometry(shellShapes(B.win, SH.R * 0.4), { depth: wd, bevelEnabled: false, curveSegments: 4 }); wg.translate(0, 0, -wd / 2);
     this.body.add(new THREE.Mesh(wg, M.glass));
     for (const seg of [B.shield, B.rear]) if (seg) this.body.add(this.pane(seg, SH.bs + 0.015));
@@ -250,6 +260,20 @@ class Builder {
       for (const s of [-1, 1]) body.add(this.box(1.1, 0.04, 0.16, M.dark, toX(200), 0.02, s * (ext + 0.08))); // side steps
       const sp = this.wheel(0, 0.28, 0.2); sp.rotation.y = Math.PI / 2; sp.position.set(bw - 0.1, 0.42, 0); body.add(sp); // spare wheel
     }
+    if (bodyId === 'firetruck') { // ladder on the roof of the box
+      const top = toY(-98) + SH.bs + 0.05, x0 = toX(50), x1 = toX(250);
+      for (const s of [-1, 1]) body.add(this.link(new V3(x0, top, s * W * 0.28), new V3(x1, top, s * W * 0.28), 0.03, M.chrome));
+      for (let x = x0 + 0.1; x < x1; x += 0.22) body.add(this.cyl(0.018, 0.018, W * 0.56, M.chrome, x, top, 0, 'z', 8));
+      for (const s of [-1, 1]) body.add(this.cyl(0.04, 0.04, 0.12, M.dark, x0 + 0.1, top - 0.08, s * W * 0.28), this.cyl(0.04, 0.04, 0.12, M.dark, x1 - 0.1, top - 0.08, s * W * 0.28));
+    }
+    if (bodyId === 'schoolbus') { // stop sign arm on the driver's side
+      const sign = this.cyl(0.14, 0.14, 0.025, this.glow(0xd90000, 0.6), toX(300), 0.72, -(ext + 0.07), 'z', 8); sign.rotation.z = Math.PI / 8; body.add(sign);
+      body.add(this.box(0.1, 0.05, 0.05, M.dark, toX(300) + 0.12, 0.72, -(ext + 0.03)));
+    }
+    if (bodyId === 'jeep') {
+      const sp = this.wheel(1, 0.3, 0.22); sp.rotation.y = Math.PI / 2; sp.position.set(bw - 0.14, 0.55, 0); body.add(sp); // spare on the tailgate
+      for (const s of [-1, 1]) body.add(this.box(0.9, 0.04, 0.14, M.dark, toX(170), 0.02, s * (ext + 0.07))); // side steps
+    }
     if (bodyId === 'dragster') {
       body.add(this.box(0.3, 0.16, 0.34, M.chrome, toX(292), 0.32 + SH.bs + 0.08, 0), this.box(0.22, 0.12, 0.3, M.dark, toX(296), 0.32 + SH.bs + 0.22, 0)); // blower + scoop
       for (const s of [-1, 1]) {
@@ -271,16 +295,37 @@ class Builder {
       const sp = new THREE.SpotLight(0xfff0c0, 12, 7, 0.55, 0.6); sp.position.set(fx + 0.1, headY, 0); sp.target.position.set(fx + 3, -ch, 0); body.add(sp, sp.target);
     }
     if (rung >= 2) { // Roof Bar
-      const bx = toX(B.roof[1]) - 0.18, by = toY(B.roof[2]) + 0.1 + e, lm = this.glow(rung === 3 ? 0x7ff9ff : 0xfff27a, 3.5);
+      const bx = toX(B.roof[1]) - 0.18, by = toY(B.roof[2]) + 0.1 + e, cols = rung === 4 ? [0xff2d55, 0x3dff8b, 0x3dc8ff, 0xc04dff, 0xffd23f] : [rung === 3 ? 0x7ff9ff : 0xfff27a];
       body.add(this.box(0.16, 0.1, W * 0.8, M.dark, bx, by, 0));
-      for (let i = 0; i < 5; i++) body.add(this.box(0.03, 0.07, W * 0.12, lm, bx + 0.085, by, (i - 2) * W * 0.16));
+      for (let i = 0; i < 5; i++) body.add(this.box(0.03, 0.07, W * 0.12, this.glow(cols[i % cols.length]!, 3.5), bx + 0.085, by, (i - 2) * W * 0.16));
+      if (rung === 4) { // Laser Show: coloured beams fanning out from a turret on the bar, sweeping round
+        const turret = new THREE.Group(); turret.position.set(bx, by + 0.1, 0); body.add(turret);
+        turret.add(new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 10), M.chrome));
+        for (let i = 0; i < 8; i++) {
+          const bm = this.mat(new THREE.MeshBasicMaterial({ color: [0xff2d55, 0x3dff8b, 0x3dc8ff, 0xc04dff][i % 4], transparent: true, opacity: 0.75, blending: THREE.AdditiveBlending, depthWrite: false }));
+          const a = (i / 8) * Math.PI * 2, beam = this.link(new V3(0, 0, 0), new V3(Math.cos(a) * 3.2, 1.1 + (i % 2) * 0.6, Math.sin(a) * 3.2), 0.012, bm);
+          beam.castShadow = false; turret.add(beam);
+        }
+        this.anim.lasers = turret;
+      }
     }
-    if (rung === 3 && glowTex) { // Glow Under
-      const gm = this.mat(new THREE.MeshBasicMaterial({ map: glowTex, color: 0x2ef2ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    if (rung >= 3 && glowTex) { // Glow Under
+      const gm = this.mat(new THREE.MeshBasicMaterial({ map: glowTex, color: rung === 4 ? 0xc04dff : 0x2ef2ff, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
       const pl = new THREE.Mesh(new THREE.PlaneGeometry(w1 - w0 + 1.8, W + 1.6), gm); pl.rotation.x = -Math.PI / 2; pl.position.set((w0 + w1) / 2, -ch + 0.02, 0); body.add(pl);
-      const p = new THREE.PointLight(0x2ef2ff, 4, 3); p.position.set((w0 + w1) / 2, -ch + 0.3, 0); body.add(p);
+      const p = new THREE.PointLight(rung === 4 ? 0xc04dff : 0x2ef2ff, 4, 3); p.position.set((w0 + w1) / 2, -ch + 0.3, 0); body.add(p);
       this.anim.glow = { m: gm, l: p };
     }
+  }
+
+  // --- Horn Mods: only the Train Horn shows, as three chrome trumpets on the roof ---
+  horn() {
+    if (this.f.horn !== 4) return;
+    const { B, W, body } = this, [x0, x1, ry] = B.roof, x = toX((x0 + x1) / 2), y = toY(ry) + SH.bs + 0.09;
+    body.add(this.box(0.5, 0.04, 0.3, M.dark, x, y - 0.05, 0));
+    [0.34, 0.44, 0.54].forEach((L, i) => {
+      const t = this.cyl(0.035, 0.085, L, M.chrome, x + 0.05, y + 0.02, (i - 1) * W * 0.12, 'x', 20);
+      t.position.x += L / 2 - 0.2; body.add(t);
+    });
   }
 
   build(): BuiltTruck {
@@ -289,15 +334,16 @@ class Builder {
     const { tex, bb } = this.shell(cv);
     const draw = (t: number) => { drawPaint(cv, bb, B, f, this.bodyId, t); tex.needsUpdate = true; };
     draw(performance.now());
-    if (f.paint === 3) this.anim.repaint = draw;
+    if (f.paint >= 3) this.anim.repaint = draw;
     const fx = toX(B.front) + SH.bs - 0.05, headY = toY(B.head[1]), [w0, w1] = B.wheels.map(toX) as [number, number], zW = W / 2 + tw / 2 + 0.04;
     this.details(fx, headY);
     this.chassis(w0, w1, zW);
     for (const wx of [w0, w1]) for (const s of [-1, 1]) {
       const wh = this.wheel(f.tires, r, tw); wh.position.set(wx, r, s * zW); this.truck.add(wh);
-      if (f.tires === 3) this.anim.spin.push(wh);
+      if (f.tires >= 3) this.anim.spin.push(wh);
     }
     this.lights(fx, headY, w0, w1);
+    this.horn();
     this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = !(o.material as THREE.Material).transparent; });
     const ch = this.ch;
     return {
@@ -331,6 +377,7 @@ class Helix extends THREE.Curve<THREE.Vector3> {
 const FLAME1 = 'M0,-3 C-40,-3 -60,-30 -90,-20 C-72,-36 -100,-46 -120,-32 C-106,-52 -134,-58 -152,-40 C-142,-16 -100,-1 -60,1 Z';
 const FLAME2 = 'M0,-3 C-30,-4 -44,-20 -64,-14 C-52,-26 -72,-30 -86,-22 C-80,-10 -50,-1 -30,0 Z';
 const BOLT = 'M-4,-54 L-26,-18 L-8,-20 L-20,6 L18,-32 L0,-30 L12,-54 Z';
+const WING = 'M-12,-34 C-34,-62 -74,-62 -94,-48 C-78,-46 -82,-38 -94,-32 C-78,-30 -80,-22 -90,-16 C-60,-14 -32,-20 -12,-26 Z';
 
 function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, bodyId: BodyId, t: number) {
   const c = cv.getContext('2d')!, CW = cv.width, CH = cv.height, dx = bb.max.x - bb.min.x, dy = bb.max.y - bb.min.y;
@@ -339,6 +386,7 @@ function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, 
   if (f.paint === 0) fill = '#8d96a3';
   else if (f.paint === 1) fill = '#1e7bff';
   else if (f.paint === 2) { fill = c.createLinearGradient(B.front, 0, B.back, 0); fill.addColorStop(0, '#ffe14d'); fill.addColorStop(0.45, '#ff6a00'); fill.addColorStop(1, '#a80000'); }
+  else if (f.paint === 4) { fill = c.createLinearGradient(0, -130, 0, 0); fill.addColorStop(0, '#fff1a8'); fill.addColorStop(0.45, '#e0a800'); fill.addColorStop(1, '#8a6100'); }
   else {
     const off = (t * 0.08) % 200, cols = ['#ff3b3b', '#ffb800', '#f4ff5a', '#3dff8b', '#3dc8ff', '#c04dff'];
     fill = c.createLinearGradient(-400 + off, 0, 800 + off, 0);
@@ -347,6 +395,13 @@ function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, 
   c.fillStyle = fill; c.fillRect(-100, -200, 600, 300);
   const sh = c.createLinearGradient(0, -120, 0, 5); sh.addColorStop(0, 'rgba(255,255,255,.14)'); sh.addColorStop(1, 'rgba(0,0,0,.28)');
   c.fillStyle = sh; c.fillRect(-100, -200, 600, 300);
+  if (f.paint === 4) { // Gold Flake: flakes that catch the light in turn
+    const rn = seeded(11);
+    for (let i = 0; i < 260; i++) {
+      const x = B.back + rn() * (B.front - B.back), y = -rn() * 130, k = 0.5 + 0.5 * Math.sin(t * 0.004 + i * 1.7);
+      c.fillStyle = `rgba(255,255,230,${(0.15 + 0.85 * k * k).toFixed(2)})`; c.fillRect(x, y, 1.6 + rn() * 1.6, 1.6 + rn() * 1.6);
+    }
+  }
   c.save(); c.clip(new Path2D(B.path));
   if (f.decals === 1) { c.fillStyle = '#fff'; c.fillRect(-50, -26, 500, 6); c.fillRect(-50, -16, 500, 6); }
   if (f.decals === 2) { c.save(); c.translate(B.front, 0); c.fillStyle = '#ff7a00'; c.fill(new Path2D(FLAME1)); c.fillStyle = '#ffe14d'; c.fill(new Path2D(FLAME2)); c.restore(); }
@@ -355,6 +410,16 @@ function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, 
     c.save(); c.translate(B.mid, 0); c.fill(b); c.stroke(b); c.restore();
     c.save(); c.translate(B.mid - 100, 0); c.scale(0.7, 0.7); c.fill(b); c.stroke(b); c.restore();
   }
+  if (f.decals === 4) { // Skull & Wings
+    c.save(); c.translate(B.mid, 0); c.lineWidth = 2.5; c.strokeStyle = '#111'; c.lineJoin = 'round';
+    const wing = new Path2D(WING); c.fillStyle = '#f2f2f2';
+    for (const sx of [1, -1]) { c.save(); c.scale(sx, 1); c.fill(wing); c.stroke(wing); c.restore(); }
+    c.beginPath(); c.arc(0, -36, 15, 0, Math.PI * 2); c.rect(-9, -26, 18, 10); c.fill(); c.stroke();
+    c.fillStyle = '#111'; c.beginPath(); c.arc(-6, -38, 4.5, 0, Math.PI * 2); c.arc(6, -38, 4.5, 0, Math.PI * 2); c.fill();
+    c.beginPath(); c.moveTo(0, -33); c.lineTo(-2.5, -29); c.lineTo(2.5, -29); c.fill();
+    for (const x of [-4.5, 0, 4.5]) { c.beginPath(); c.moveTo(x, -26); c.lineTo(x, -17); c.stroke(); }
+    c.restore();
+  }
   realPaint(c, B, bodyId);
   c.restore();
 }
@@ -362,7 +427,9 @@ function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, 
 /** Window seals, door seam and handle, tailgate, and mud up the lower panels. */
 function realPaint(c: CanvasRenderingContext2D, B: BodyShape, bodyId: BodyId) {
   c.lineJoin = 'round'; c.lineWidth = 7; c.strokeStyle = '#16181c'; c.stroke(new Path2D(B.win));
-  if (bodyId !== 'dragster') {
+  if (bodyId === 'schoolbus') { c.fillStyle = '#16181c'; c.fillRect(B.back, -66, B.front - B.back, 4); c.fillRect(B.back, -46, B.front - B.back, 4); }
+  if (bodyId === 'firetruck') { c.lineWidth = 1.6; c.strokeStyle = 'rgba(0,0,0,.55)'; for (let x = 44; x < 240; x += 66) { c.beginPath(); c.roundRect(x, -90, 58, 80, 5); c.stroke(); } }
+  if (bodyId !== 'dragster' && bodyId !== 'schoolbus') {
     const [x0, x1, ry] = B.roof, dw = (x1 - x0) * 0.72, wy = Math.max(...parsePath(B.win).flat().map(p => p[1]));
     c.lineWidth = 1.6; c.strokeStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.roundRect(x0 + 4, ry + 3, dw, -ry - 9, 6); c.stroke();
     c.fillStyle = '#24272c'; c.beginPath(); c.roundRect(x0 + dw - 22, wy + 9, 16, 4, 2); c.fill();

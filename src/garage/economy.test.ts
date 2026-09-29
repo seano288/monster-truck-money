@@ -1,68 +1,139 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_MODS } from './catalog';
-import { affordable, boltsNeeded, builtEverything, goalOf, priceOf, unlock, type Wallet } from './economy';
+import { ALL_MODS, isLegendary } from './catalog';
+import { affordable, boltsNeeded, builtEverything, goalOf, nextLegendary, priceOf, unlock, waitingOn, type Wallet } from './economy';
 
-const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], goal: null, ...over });
+const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], ownedBodies: ['pickup', 'bigfoot', 'dragster'], goal: null, ...over });
 
 describe('prices', () => {
   it('costs 3, 9 and 18 Bolts by Rung', () => {
-    expect([priceOf('paint:1'), priceOf('paint:2'), priceOf('paint:3')]).toEqual([3, 9, 18]);
+    expect([priceOf('paint:1'), priceOf('paint:2'), priceOf('paint:3')]).toEqual([{ bolts: 3 }, { bolts: 9 }, { bolts: 18 }]);
   });
 
-  it('adds up to 150 Bolts for all 15 Mods', () => {
-    expect(ALL_MODS).toHaveLength(15);
-    expect(ALL_MODS.reduce((n, m) => n + priceOf(m), 0)).toBe(150);
+  it('adds up to 150 Bolts for the 15 Bolt Mods', () => {
+    const boltMods = ALL_MODS.filter(m => !isLegendary(m));
+    expect(boltMods).toHaveLength(15);
+    expect(boltMods.reduce((n, m) => n + (priceOf(m).bolts ?? 0), 0)).toBe(150);
+  });
+
+  it('prices the Legendaries in money, from $1.35 to $4.80', () => {
+    expect(['tires:4', 'paint:4', 'decals:4', 'lights:4', 'horn:4'].map(m => priceOf(m as 'tires:4'))).toEqual([
+      { cents: 135 }, { cents: 210 }, { cents: 275 }, { cents: 360 }, { cents: 480 },
+    ]);
+  });
+
+  it('costs 30, 45 and 60 Bolts for the new Bodies', () => {
+    expect([priceOf('body:firetruck'), priceOf('body:schoolbus'), priceOf('body:jeep')]).toEqual([{ bolts: 30 }, { bolts: 45 }, { bolts: 60 }]);
   });
 });
 
 describe('unlock', () => {
+  const BOLTS = { kind: 'bolts' } as const;
+  const cash = (cents: number) => ({ kind: 'cash', cents }) as const;
+
   it('spends the Bolts and unlocks the Mod', () => {
-    const w = unlock(wallet({ bolts: 10 }), 'tires:2');
+    const w = unlock(wallet({ bolts: 10 }), 'tires:2', BOLTS);
     expect(w.bolts).toBe(1);
     expect(w.unlocked).toEqual(['tires:2']);
   });
 
   it('refuses a Mod he cannot afford', () => {
-    expect(() => unlock(wallet({ bolts: 8 }), 'tires:2')).toThrow();
+    expect(() => unlock(wallet({ bolts: 8 }), 'tires:2', BOLTS)).toThrow();
   });
 
   it('refuses a Mod that is already unlocked', () => {
-    expect(() => unlock(wallet({ bolts: 20, unlocked: ['tires:2'] }), 'tires:2')).toThrow();
+    expect(() => unlock(wallet({ bolts: 20, unlocked: ['tires:2'] }), 'tires:2', BOLTS)).toThrow();
   });
 
   it('clears the Goal once it is unlocked', () => {
-    expect(unlock(wallet({ bolts: 18, goal: 'horn:3' }), 'horn:3').goal).toBeNull();
-    expect(unlock(wallet({ bolts: 18, goal: 'horn:3' }), 'horn:1').goal).toBe('horn:3');
+    expect(unlock(wallet({ bolts: 18, goal: 'horn:3' }), 'horn:3', BOLTS).goal).toBeNull();
+    expect(unlock(wallet({ bolts: 18, goal: 'horn:3' }), 'horn:1', BOLTS).goal).toBe('horn:3');
+  });
+
+  it('buys a Body with Bolts', () => {
+    const w = unlock(wallet({ bolts: 50, goal: 'body:schoolbus' }), 'body:schoolbus', BOLTS);
+    expect(w.bolts).toBe(5);
+    expect(w.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'schoolbus']);
+    expect(w.unlocked).toEqual([]);
+    expect(w.goal).toBeNull();
+    expect(() => unlock(w, 'body:schoolbus', BOLTS)).toThrow();
+    expect(() => unlock(wallet({ bolts: 44 }), 'body:schoolbus', BOLTS)).toThrow();
+  });
+
+  it('unlocks a Legendary only for the exact money, once the top Rung is unlocked', () => {
+    const ready = wallet({ bolts: 99, unlocked: ['tires:3'] });
+    const w = unlock(ready, 'tires:4', cash(135));
+    expect(w.unlocked).toEqual(['tires:3', 'tires:4']);
+    expect(w.bolts).toBe(99); // money, not Bolts
+    expect(() => unlock(ready, 'tires:4', cash(130))).toThrow();
+    expect(() => unlock(ready, 'tires:4', cash(140))).toThrow();
+    expect(() => unlock(ready, 'tires:4', BOLTS)).toThrow();
+    expect(() => unlock(wallet({ unlocked: ['tires:1', 'tires:2'] }), 'tires:4', cash(135))).toThrow();
+  });
+
+  it('never takes money for a Bolt Mod', () => {
+    expect(() => unlock(wallet({ bolts: 99 }), 'tires:1', cash(3))).toThrow();
+  });
+});
+
+describe('a Legendary', () => {
+  it('waits on the top Rung in its Slot', () => {
+    expect(waitingOn(wallet({ unlocked: ['paint:1'] }), 'paint:4')).toBe('paint:3');
+    expect(waitingOn(wallet({ unlocked: ['paint:3'] }), 'paint:4')).toBeNull();
+    expect(waitingOn(wallet(), 'paint:2')).toBeNull();
   });
 });
 
 describe('the Goal', () => {
+  const allBoltMods = ALL_MODS.filter(m => !isLegendary(m));
+
   it('defaults to the cheapest locked Mod', () => {
     expect(goalOf(wallet())).toBe('tires:1');
     expect(goalOf(wallet({ unlocked: ['tires:1', 'paint:1', 'decals:1', 'lights:1', 'horn:1'] }))).toBe('tires:2');
   });
 
-  it('is the Mod he chose while it is still locked', () => {
+  it('is the Mod or Body he chose while it is still locked', () => {
     expect(goalOf(wallet({ goal: 'lights:3' }))).toBe('lights:3');
     expect(goalOf(wallet({ goal: 'lights:3', unlocked: ['lights:3'] }))).toBe('tires:1');
+    expect(goalOf(wallet({ goal: 'body:jeep' }))).toBe('body:jeep');
   });
 
-  it('is gone once he has built everything', () => {
-    const all = wallet({ unlocked: [...ALL_MODS] });
-    expect(goalOf(all)).toBeNull();
-    expect(builtEverything(all)).toBe(true);
+  it('is never a Legendary, which is bought with money', () => {
+    expect(goalOf(wallet({ goal: 'horn:4', unlocked: ['horn:3'] }))).toBe('tires:1');
+    expect(goalOf(wallet({ unlocked: allBoltMods }))).toBe('body:firetruck');
+  });
+
+  it('moves on to the next Body once the Mods are bought', () => {
+    expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: ['pickup', 'bigfoot', 'dragster', 'firetruck'] }))).toBe('body:schoolbus');
+  });
+
+  it('is gone once he has built everything, Legendaries and Bodies too', () => {
+    const bodies = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'] as const;
+    expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: bodies }))).toBeNull();
+    expect(builtEverything(wallet({ unlocked: allBoltMods, ownedBodies: bodies }))).toBe(false);
+    expect(builtEverything(wallet({ unlocked: [...ALL_MODS] }))).toBe(false);
+    expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies }))).toBe(true);
     expect(builtEverything(wallet())).toBe(false);
   });
 
   it('says how many more Bolts he needs', () => {
     expect(boltsNeeded(wallet({ bolts: 5 }), 'paint:2')).toBe(4);
     expect(boltsNeeded(wallet({ bolts: 12 }), 'paint:2')).toBe(0);
+    expect(boltsNeeded(wallet({ bolts: 12 }), 'body:firetruck')).toBe(18);
   });
 });
 
 describe('affordable', () => {
-  it('lists the locked Mods he has enough Bolts for', () => {
+  it('lists the locked Mods and Bodies he has enough Bolts for, never a Legendary', () => {
     expect(affordable(wallet({ bolts: 9, unlocked: ['tires:1'] }))).toEqual(['tires:2', 'paint:1', 'paint:2', 'decals:1', 'decals:2', 'lights:1', 'lights:2', 'horn:1', 'horn:2']);
     expect(affordable(wallet({ bolts: 2 }))).toEqual([]);
+    expect(affordable(wallet({ bolts: 30, unlocked: ALL_MODS.filter(m => !isLegendary(m)) }))).toEqual(['body:firetruck']);
+  });
+});
+
+describe('the next Legendary', () => {
+  it('is the cheapest one still to buy, whether or not it is waiting', () => {
+    expect(nextLegendary(wallet())).toBe('tires');
+    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'paint:4'] }))).toBe('decals');
+    expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary) }))).toBeNull();
   });
 });
