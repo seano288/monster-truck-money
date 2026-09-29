@@ -24,11 +24,12 @@ A build-ready spec (`.scratch/monster-truck-garage/spec.md`) for the next versio
 - [Static stack options that keep a native app possible](issues/02-static-stack-options.md): all four stacks can deploy to Pages and wrap with Capacitor; the real differences are base64 overhead and agent readability (single file), JS weight (vanilla 2 kB to React 69 kB), and extra precache config for offline with Vite.
 - [Garage economy: starter Trucks, Mods and Reward Tokens](issues/03-garage-economy.md): Rounds of 5 earn a flat 3 Bolts; 3 switchable Bodies; 5 Slots × 3 Mods at 3/9/18 Bolts (about 50 Rounds for everything); no gating; one-tap final unlocks; a goal bar during Rounds.
 - [How Game Modes and Levels progress automatically](issues/04-mode-and-level-progression.md): Pay the Garage renamed Pay the Shop; modes open in a chain at Level 2; he picks the mode; each mode has its own Level, raised by Mastery (8 of the last 10 right first try, no help) and never lowered; smaller ranges, spoken choices and running totals, a new Help me pay; a level-up voice line plus an introduction card for the new money.
+- [Choose the stack](issues/05-choose-stack.md): Vite + Preact + strict TS, fresh build replacing the old app; `localStorage` behind an async seam; precached PWA with `autoUpdate` but no dependence on the service worker; typed phrase list with committed clips and a build that fails on a missing clip; Vitest for the logic (ADR 0001).
 
 ## Not yet specified
 
 - **New Game Modes**: once the Garage economy exists, there may be modes like "can I afford it?", making change or comparing amounts. They might end up folded into the Garage itself.
-- **Voice for new content**: every new phrase (Mod names, Garage prompts, mode intros) needs a recorded clip. How that pipeline works depends on the stack decision.
+- **Voice for new content**: every new phrase (Mod names, Garage prompts, mode intros, level-up lines) needs wording and a recorded clip. The plumbing is settled (see "Choose the stack"); what's still open is the phrase list itself, which firms up as the prototypes settle the screens.
 - **Sound and celebration**: what unlocking a Mod feels like (animation, sound, voice), now that race wins are gone.
 - **Assembling the spec**: pulling the resolved decisions into `spec.md`, and deciding how to split it into implementation issues.
 
