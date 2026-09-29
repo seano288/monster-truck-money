@@ -20,5 +20,5 @@ Spec: [Monster Truck Money, the Garage version](../../monster-truck-garage/spec.
 
 **2026-09-29, Claude:** implemented in `66a749e` on `wayfinder/monster-truck-garage`.
 Still open:
-- The Pages workflow publishes the old app at the root, as now, and the new build under `next/`: written and working, then replaced at cutover (08), which publishes the new build at the root
+- The Pages workflow publishes the old app at the root, as now, and the new build under `next/`: written but never deployed, since Pages deploys only from main; replaced at cutover (08), which publishes the new build at the root
 CI passed on GitHub (run 36633702464) once the lockfile resolved from the public npm registry (`1acafb2`).
