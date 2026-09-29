@@ -26,12 +26,12 @@ A build-ready spec (`.scratch/monster-truck-garage/spec.md`) for the next versio
 - [How Game Modes and Levels progress automatically](issues/04-mode-and-level-progression.md): Pay the Garage renamed Pay the Shop; modes open in a chain at Level 2; he picks the mode; each mode has its own Level, raised by Mastery (8 of the last 10 right first try, no help) and never lowered; smaller ranges, spoken choices and running totals, a new Help me pay; a level-up voice line plus an introduction card for the new money.
 - [Choose the stack](issues/05-choose-stack.md): Vite + Preact + strict TS, fresh build replacing the old app; `localStorage` behind an async seam; precached PWA with `autoUpdate` but no dependence on the service worker; typed phrase list with committed clips and a build that fails on a missing clip; Vitest for the logic (ADR 0001).
 - [Prototype the Truck art and the Garage screen](issues/06-truck-art-and-garage-screen.md): "Tap the truck" layout with a hotspot per Slot and a Mod sheet (bottom in portrait, side in landscape); a 3D Truck in three.js with a 360° turntable and camera moves per Slot; the "Real" look built in code (extruded profile, one painted canvas texture, detailed chassis and wheels); adds three.js to ADR 0001's stack.
+- [Prototype the app layout and the game screens](issues/07-app-shell-and-game-screens.md): "Tile home" (A of three): a big Garage tile plus three Game Mode tiles, full-screen Rounds with a 🏠/stars/goal/Bolts bar, an end-of-Round overlay with 🔧 Garage / ▶ Play again, and the Garage as its own screen; every phrase uses the game's recorded voice, with money amounts joined from dollar and cent clips.
 
 ## Not yet specified
 
 - **New Game Modes**: once the Garage economy exists, there may be modes like "can I afford it?", making change or comparing amounts. They might end up folded into the Garage itself.
-- **Voice for new content**: every new phrase (Mod names, Garage prompts, mode intros, level-up lines) needs wording and a recorded clip. The plumbing is settled (see "Choose the stack"); what's still open is the phrase list itself, which firms up as the prototypes settle the screens.
-- **Sound and celebration**: what unlocking a Mod feels like (animation, sound, voice), now that race wins are gone.
+- **Voice for new content**: every new phrase (Mod names, Garage prompts, mode intros, level-up lines) needs wording and a recorded clip in the game's voice, with no browser-voice fallback. The plumbing is settled (see "Choose the stack"), and the prototypes now have a working phrase list (`make_prototype_voice.py` on `prototype/app-shell`), including amounts joined from dollar and cent clips. Still open: whether joined amounts sound natural enough on the iPad, and the final wording.
 - **Assembling the spec**: pulling the resolved decisions into `spec.md`, and deciding how to split it into implementation issues.
 
 ## Out of scope
