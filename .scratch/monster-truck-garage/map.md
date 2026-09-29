@@ -28,12 +28,11 @@ A build-ready spec (`.scratch/monster-truck-garage/spec.md`) for the next versio
 - [Prototype the Truck art and the Garage screen](issues/06-truck-art-and-garage-screen.md): "Tap the truck" layout with a hotspot per Slot and a Mod sheet (bottom in portrait, side in landscape); a 3D Truck in three.js with a 360° turntable and camera moves per Slot; the "Real" look built in code (extruded profile, one painted canvas texture, detailed chassis and wheels); adds three.js to ADR 0001's stack.
 - [Prototype the app layout and the game screens](issues/07-app-shell-and-game-screens.md): "Tile home" (A of three): a big Garage tile plus three Game Mode tiles, full-screen Rounds with a 🏠/stars/goal/Bolts bar, an end-of-Round overlay with 🔧 Garage / ▶ Play again, and the Garage as its own screen; every phrase uses the game's recorded voice, with money amounts joined from dollar and cent clips.
 - [Prototype the sound and celebration moments](issues/08-sound-and-celebration.md): "Truck show" (C of three): the Truck acts out each moment (drives the Bolts in, wheelies for a Level up, crushes a mode's padlock, ramp-flips for ⭐; hop, spin jump or big double-spin jump in the Garage by Mod rung), growing over three tiers; no taps until a moment ends; sounds are made in code and the voice adds "Wow!" and "That's the best one!".
+- [Try the prototypes on the real iPad](issues/09-try-prototypes-on-ipad.md): everything held up on the device: joined amounts sound natural, the 3D moves run smoothly, 7 s combos are fine, no skip is needed, and nothing scrolls.
 
 ## Not yet specified
 
-- **New Game Modes**: once the Garage economy exists, there may be modes like "can I afford it?", making change or comparing amounts. They might end up folded into the Garage itself.
-- **Voice for new content**: every new phrase (Mod names, Garage prompts, mode intros, level-up lines) needs wording and a recorded clip in the game's voice, with no browser-voice fallback. The plumbing is settled (see "Choose the stack"), and the prototypes now have a working phrase list (`make_prototype_voice.py` on `prototype/app-shell`), including amounts joined from dollar and cent clips. The celebrations add "Wow!" and "That's the best one!". Still open: whether joined amounts sound natural enough on the iPad, and the final wording.
-- **Assembling the spec**: pulling the resolved decisions into `spec.md`, and deciding how to split it into implementation issues.
+_(none: the remaining fog graduated into "Try the prototypes on the real iPad" and "Assemble the spec and plan the split")_
 
 ## Out of scope
 
@@ -44,3 +43,4 @@ A build-ready spec (`.scratch/monster-truck-garage/spec.md`) for the next versio
 - **Carrying over** the old trophies and cup progress.
 - **Parent override** of Levels.
 - **Any backend**, accounts or sync.
+- **New Game Modes** ("can I afford it?", making change, comparing amounts, or money questions folded into the Garage): the Destination brings back the three existing modes only. **Tracked for a future effort**: the spec should list them as follow-ups and keep adding a mode easy.
