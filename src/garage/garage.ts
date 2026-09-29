@@ -7,6 +7,9 @@ import { affordable, boltsNeeded, goalOf, priceOf, unlock } from './economy';
 export const currentBody = (): BodyId => game.value.body ?? 'pickup';
 export const currentFit = (): Fit => game.value.fitted[currentBody()] ?? defaultFit();
 
+/** His Truck's paint as one flat colour, for the 2D Truck on Home and the celebration road. */
+export const truckColor = () => ['#8d96a3', '#1e7bff', '#ff6a00', '#c04dff'][currentFit().paint]!;
+
 export function chooseBody(body: BodyId) {
   update(s => ({ ...s, body }));
 }

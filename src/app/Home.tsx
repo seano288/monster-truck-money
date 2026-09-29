@@ -1,6 +1,6 @@
 import { useEffect } from 'preact/hooks';
 import { sBad } from '../audio/sfx';
-import { currentFit } from '../garage/garage';
+import { truckColor } from '../garage/garage';
 import { GoalBar } from '../garage/GoalBar';
 import { game, update } from '../game/store';
 import type { ModeId } from '../modes/ids';
@@ -9,8 +9,6 @@ import { startRound } from '../round/round';
 import { BoltPile, LevelDots, TruckArt } from '../ui/bits';
 import { say, sayMore } from '../voice/say';
 import { screen } from './nav';
-
-const PAINT = ['#8d96a3', '#1e7bff', '#ff6a00', '#c04dff'];
 
 function tapMode(id: ModeId) {
   const m = game.value.modes[id], mode = MODES.find(x => x.id === id)!;
@@ -34,7 +32,7 @@ export function Home() {
       </header>
       <div class="home">
         <button class="tile t-garage" aria-label="Garage" onClick={() => (screen.value = 'garage')}>
-          <TruckArt color={PAINT[currentFit().paint]} />
+          <TruckArt color={truckColor()} />
           <span class="nm">🔧 Garage</span>
         </button>
         {MODES.map(({ id, name, icon }) => {

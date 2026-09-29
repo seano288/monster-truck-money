@@ -46,3 +46,18 @@ export const HORNS: readonly (() => void)[] = [
   () => { tone(110, 1.2, 'sawtooth', 0, 0.3, 45); tone(160, 1.1, 'square', 0, 0.1, 60); noise({ dur: 1.1, f: 500 }); },
 ];
 export const sNope = () => tone(220, 0.22, 'square', 0, 0.08, 160);
+
+// ---------- celebration sounds ----------
+export const sChime = () => { tone(1319, 0.35, 'triangle', 0, 0.12); tone(1760, 0.45, 'triangle', 0.08, 0.1); };
+export const sBigFanfare = () => {
+  [523, 659, 784, 1047, 784, 1047].forEach((f, i) => tone(f, 0.22, 'triangle', i * 0.13, 0.14));
+  [1047, 1319, 1568].forEach(f => tone(f, 1.2, 'triangle', 0.8, 0.09));
+};
+export const sDrumroll = (dur: number) => noise({ dur, vol: 0.3, type: 'bandpass', f: 1200, beat: 0.05, grow: true });
+export const sWhoosh = (dur = 0.5) => noise({ dur, vol: 0.3, type: 'bandpass', f: 400, f2: 3500 });
+export const sEngine = (dur = 0.9) => { tone(55, dur, 'sawtooth', 0, 0.12, 150); tone(82, dur, 'square', 0, 0.05, 220); };
+export const sCrunch = () => { noise({ dur: 0.3, vol: 0.5, f: 900 }); tone(120, 0.3, 'square', 0, 0.12, 50); };
+export const sThud = () => { tone(90, 0.35, 'sine', 0, 0.4, 40); noise({ dur: 0.2, vol: 0.3, f: 300 }); };
+export const sHonk = () => { tone(392, 0.4, 'sawtooth', 0, 0.1); tone(494, 0.4, 'sawtooth', 0, 0.1); };
+export const sBoing = () => tone(260, 0.25, 'sine', 0, 0.2, 780);
+export const sPop = () => { noise({ dur: 0.15, vol: 0.35, type: 'highpass', f: 1500 }); noise({ dur: 0.6, vol: 0.08, type: 'highpass', f: 4000, when: 0.1, beat: 0.06 }); };
