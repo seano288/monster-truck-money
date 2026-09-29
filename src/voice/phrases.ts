@@ -3,6 +3,7 @@
 import { BODY_NAMES, SLOTS, type BodyName, type ModName, type SlotName } from '../garage/catalog';
 import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
 import { MODE_NAMES, type ModeName } from '../modes/ids';
+import { SHOP_ITEMS, type ShopItem } from '../modes/pay/pay';
 import { allAmountPieces, type AmountPiece } from './amount';
 
 type Of<T extends readonly string[]> = T[number];
@@ -32,6 +33,9 @@ const ROUNDS = [
   "Let's go!", 'How much money is this?', 'Not quite!', "Let's count together.", 'Tap some money first!',
   'Almost!', 'You need', 'more', 'Too much!', 'Take back', 'It costs',
 ] as const;
+
+type BuyPhrase = `Buy the ${ShopItem['name']}!`;
+const buyPhrases = (): BuyPhrase[] => SHOP_ITEMS.map(i => `Buy the ${i.name}!` as const);
 
 // ---------- introduction card ----------
 const INTRO = ['Look!', 'New money!'] as const;
@@ -63,9 +67,10 @@ const garagePhrases = (): GaragePhrase[] => {
   ];
 };
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | AmountPiece;
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
-export const COUNT_PHRASES: readonly Phrase[] = ['How much money is this?', 'Not quite!', "Let's count together.", 'Tap a coin to hear its name.', 'Count more cash to open this!'];
+export const PAY_PHRASES: readonly Phrase[] = [...buyPhrases(), 'It costs', 'Tap some money first!', 'Almost!', 'You need', 'more', 'Too much!', 'Take back', 'Tap a coin to hear its name.', 'Count more cash to open this!'];
+export const COUNT_PHRASES: readonly Phrase[] = ['How much money is this?', 'Not quite!', "Let's count together.", 'Tap a coin to hear its name.', 'Learn more coins to open this!'];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...introPhrases(), ...PROGRESS, ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...allAmountPieces()])];
