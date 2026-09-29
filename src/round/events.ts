@@ -10,5 +10,5 @@ export function eventLines(e: RoundEvent): Phrase[] {
   const name = modeById(e.mode).name;
   if (e.kind === 'levelUp') return ['Level up!', e.level === 2 ? 'Now you get quarters!' : 'Now you get dollar bills!'];
   if (e.kind === 'star') return [`You are a ${name} star!`];
-  return [];
+  return [`You opened ${name}!`];
 }

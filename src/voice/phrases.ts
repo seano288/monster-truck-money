@@ -40,8 +40,10 @@ const introPhrases = (): IntroPhrase[] => [...INTRO, ...MONEY_NAMES.map(m => `Th
 
 // ---------- progress and end of Round ----------
 const PROGRESS = ['You earned 3 Bolts!', 'Level up!', 'Now you get quarters!', 'Now you get dollar bills!'] as const;
-type ModePhrase = `You are a ${ModeName} star!`;
-const modePhrases = (): ModePhrase[] => MODE_NAMES.map(m => `You are a ${m} star!` as const);
+type ModePhrase = `You are a ${ModeName} star!` | `You opened ${ModeName}!`;
+const modePhrases = (): ModePhrase[] => MODE_NAMES.flatMap(m => [`You are a ${m} star!`, `You opened ${m}!`] as const);
+/** Tapping a locked mode's tile. */
+export const LOCKED_HINTS = ['Learn more coins to open this!', 'Count more cash to open this!'] as const;
 
 // ---------- Garage ----------
 const GARAGE = ['Garage!', 'You built everything!', 'You can build something new!', 'Wow!', "That's the best one!"] as const;
@@ -61,8 +63,9 @@ const garagePhrases = (): GaragePhrase[] => {
   ];
 };
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | GaragePhrase | AmountPiece;
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
+export const COUNT_PHRASES: readonly Phrase[] = ['How much money is this?', 'Not quite!', "Let's count together.", 'Tap a coin to hear its name.', 'Count more cash to open this!'];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...introPhrases(), ...PROGRESS, ...modePhrases(), ...garagePhrases(), ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...introPhrases(), ...PROGRESS, ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...allAmountPieces()])];

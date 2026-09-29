@@ -162,3 +162,10 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .goalchip.ready{animation:pulse 1s infinite}
 .goalchip.done{font-size:calc(28px*var(--u));padding:4px 14px}
 @media (max-width:430px){.goalchip .track{display:none}}
+.slot{display:flex;flex-direction:column;align-items:center;gap:4px;transition:transform .2s}
+.slot .run{font-weight:900;font-size:calc(18px*var(--u));color:var(--green);min-height:1.2em}
+.slot.lit{transform:translateY(-6px) scale(1.08)}
+.slot.lit .coin,.slot.lit .bill{box-shadow:0 0 0 4px var(--yellow),0 0 16px 4px var(--yellow)}
+.helpers{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.help-btn{font:900 calc(20px*var(--u)) Nunito,sans-serif;padding:calc(10px*var(--u)) calc(18px*var(--u));border-radius:14px;border:3px solid #000;background:#fff;box-shadow:0 4px 0 #000}
+.help-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #000}

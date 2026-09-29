@@ -1,0 +1,75 @@
+import { useEffect, useRef, useState } from 'preact/hooks';
+import { sCount } from '../../audio/sfx';
+import { fmt, LEVEL_MONEY, MONEY } from '../../money/money';
+import { Ask } from '../../round/Ask';
+import { PeekCard } from '../../round/PeekCard';
+import { Money } from '../../ui/Money';
+import { toast } from '../../ui/toast';
+import { say, speaking, type Item } from '../../voice/say';
+import type { ModeViewProps } from '../mode';
+import { checkCount, type CountProblem } from './count';
+
+const sleep = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+export function CountView({ problem: p, level, api }: ModeViewProps<CountProblem>) {
+  const [wrong, setWrong] = useState<number[]>([]);
+  const [done, setDone] = useState(false);
+  const [counted, setCounted] = useState(0); // how many pieces Help me count has lit
+  const [peek, setPeek] = useState(false);
+  const run = useRef(0); // bumped to stop a Help me count in progress
+  useEffect(() => () => { run.current++; }, []);
+
+  const speech: Item[] = ['How much money is this?', ...p.choices.map(c => ({ parts: [{ cents: c }], light: `c${c}` }))];
+
+  async function helpCount() {
+    const me = ++run.current;
+    api.helped();
+    setCounted(0);
+    let sum = 0;
+    for (let i = 0; i < p.pile.length; i++) {
+      if (run.current !== me) return;
+      sum += MONEY[p.pile[i]!].cents;
+      setCounted(i + 1);
+      sCount(i);
+      await say({ cents: sum });
+      await sleep(250);
+    }
+  }
+
+  function tap(c: number) {
+    if (api.busy || done || wrong.includes(c)) return;
+    if (checkCount(p, c)) { run.current++; setDone(true); return api.correct(); }
+    api.miss();
+    setWrong([...wrong, c]);
+    if (api.struggling) void toast("Not quite! Let's count together.", 'Not quite!', "Let's count together.").then(helpCount);
+    else void toast('Not quite!', 'Not quite!');
+  }
+
+  const running = (i: number) => p.pile.slice(0, i + 1).reduce((s, k) => s + MONEY[k].cents, 0);
+
+  return (
+    <div class="game">
+      <Ask text="How much money is this?" speech={speech} />
+      <div class="pile">
+        {p.pile.map((k, i) => (
+          <div key={i} class={`slot ${i < counted ? 'lit' : ''}`}>
+            <Money k={k} />
+            <div class="run">{i < counted ? fmt(running(i)) : ''}</div>
+          </div>
+        ))}
+      </div>
+      <div class="choices">
+        {p.choices.map(c => (
+          <button key={c} class={`choice ${wrong.includes(c) ? 'wrong' : ''} ${done && c === p.total ? 'right' : ''} ${speaking.value === `c${c}` ? 'speaking' : ''}`}
+            disabled={wrong.includes(c)} onClick={() => tap(c)}>{fmt(c)}</button>
+        ))}
+      </div>
+      <div class="helpers">
+        <button class="help-btn" onClick={() => void helpCount()}>🔎 Help me count</button>
+        <button class="help-btn" aria-label="Show me all the money" onClick={() => { api.helped(); setPeek(true); }}>👀</button>
+        <button class="help-btn" aria-label="Start again" onClick={() => { run.current++; setCounted(0); }}>↩</button>
+      </div>
+      {peek && <PeekCard money={LEVEL_MONEY[level]} onDone={() => { setPeek(false); void say(...speech); }} />}
+    </div>
+  );
+}
