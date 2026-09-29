@@ -11,7 +11,7 @@ export const payMode: GameMode<PayProblem, Parameters<typeof checkPay>[1]> = {
   opensAfter: 'count',
   lockedHint: 'Count more cash to open this!',
   levels: LEVEL_MONEY,
-  introMoney: { 2: ['q'], 3: ['b1', 'b5'] },
+  introMoney: { 2: ['q'], 3: ['b1'] }, // no $5 bill: no price needs one
   phrases: PAY_PHRASES,
   makeProblem: makePay,
   checkAnswer: (p, tray) => checkPay(p, tray).kind === 'paid',

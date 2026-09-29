@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { playRoundShow } from '../celebrate/roundShow';
-import { truckColor } from '../garage/garage';
+import { affordableCount, truckColor } from '../garage/garage';
 import { game } from '../game/store';
 import { Bolt, IconButton, TruckArt } from '../ui/bits';
 import type { Phrase } from '../voice/phrases';
@@ -42,7 +42,7 @@ export function EndOverlay() {
       </div>
       <div class="lines">{lines.map((l, i) => <div key={i}>{l}</div>)}</div>
       <div class={`btns ${awake ? '' : 'asleep'}`}>
-        <button class={`big-btn garage ${awake && r.canBuild ? 'pulse' : ''}`} aria-label="Garage" onClick={go(() => { leaveRound(); screen.value = 'garage'; })}><span class="e">🔧</span></button>
+        <button class={`big-btn garage ${awake && affordableCount() > 0 ? 'pulse' : ''}`} aria-label="Garage" onClick={go(() => { leaveRound(); screen.value = 'garage'; })}><span class="e">🔧</span></button>
         <button class="big-btn go" aria-label="Play again" onClick={go(() => startRound(r.mode))}><span class="e">▶</span></button>
       </div>
       <IconButton label="Home" class={awake ? '' : 'asleep'} onClick={go(() => { leaveRound(); screen.value = 'home'; })}>🏠</IconButton>

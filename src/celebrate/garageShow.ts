@@ -15,7 +15,7 @@ export function celebrateUnlock(stage: GarageStage, stageEl: HTMLElement, slot: 
   const kind = KIND[rung], ms = MOVES[kind].dur;
   const burst = () => { const r = stageEl.getBoundingClientRect(); sparks(stage.truckPoint(), { w: r.width, h: r.height }); };
   stage.play(kind);
-  if (slot === 'horn') setTimeout(() => HORNS[rung]!(), kind === 'hop' ? 500 : ms);
+  if (slot === 'horn') setTimeout(() => HORNS[rung]!(), ms); // on landing
   if (rung === 1) {
     sBoing(); sChime(); burst();
     void say(got);
