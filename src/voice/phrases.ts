@@ -1,6 +1,7 @@
 // The single typed list of everything the game says. tools/make_voice.py records a clip for each entry,
 // and the build fails if any is missing. say() accepts only these phrases (and amounts, joined from pieces).
-import { MONEY_NAMES, MONEY_VALUES, type MoneyName, type MoneyValue } from '../money/money';
+import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
+import { MODE_NAMES, type ModeName } from '../modes/ids';
 import { allAmountPieces, type AmountPiece } from './amount';
 
 type Of<T extends readonly string[]> = T[number];
@@ -19,6 +20,8 @@ const moneyPhrases = (): MoneyPhrase[] =>
     const v = MONEY_VALUES[i]!;
     return [`Tap the ${m}!`, `${m}?`, `${v}?`, `That's a ${m}.`, `Find the ${m}!`, `${m} is ${v}.` as NameValue] as const;
   });
+/** "Quarter is 25¢." */
+export const moneyIs = (k: MoneyKey) => `${MONEY[k].name} is ${MONEY[k].value}.` as NameValue;
 
 // ---------- cheers after a correct first try, in every mode ----------
 export const CHEERS = ['VROOM! Great job!', 'Monster move!', 'You got it!', 'Truck-tastic!', 'Crushing it!', 'Awesome counting!'] as const;
@@ -29,11 +32,18 @@ const ROUNDS = [
   'Almost!', 'You need', 'more', 'Too much!', 'Take back', 'It costs',
 ] as const;
 
-// ---------- progress and end of Round ----------
-const PROGRESS = ['You earned 3 Bolts!'] as const;
+// ---------- introduction card ----------
+const INTRO = ['Look!', 'New money!'] as const;
+type IntroPhrase = Of<typeof INTRO> | `This is a ${MoneyName}.` | `It is worth ${MoneyValue}.`;
+const introPhrases = (): IntroPhrase[] => [...INTRO, ...MONEY_NAMES.map(m => `This is a ${m}.` as const), ...MONEY_VALUES.map(v => `It is worth ${v}.` as const)];
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | Of<typeof PROGRESS> | AmountPiece;
+// ---------- progress and end of Round ----------
+const PROGRESS = ['You earned 3 Bolts!', 'Level up!', 'Now you get quarters!', 'Now you get dollar bills!'] as const;
+type ModePhrase = `You are a ${ModeName} star!`;
+const modePhrases = (): ModePhrase[] => MODE_NAMES.map(m => `You are a ${m} star!` as const);
+
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...PROGRESS, ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...introPhrases(), ...PROGRESS, ...modePhrases(), ...allAmountPieces()])];

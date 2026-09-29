@@ -1,16 +1,15 @@
 import { screen } from '../app/nav';
-import { game } from '../game/store';
 import { modeById } from '../modes/modes';
 import { BoltPile, IconButton, Stars } from '../ui/bits';
 import { EndOverlay } from './EndOverlay';
-import { correct, helped, leaveRound, miss, round } from './round';
+import { IntroCard } from './IntroCard';
+import { correct, helped, introDone, isStruggling, leaveRound, miss, round } from './round';
 
 export function RoundScreen() {
   const r = round.value;
   if (!r) return null;
   const mode = modeById(r.mode), View = mode.View;
-  const w = game.value.modes[r.mode].window;
-  const api = { correct, miss, helped, busy: r.busy, struggling: w.filter(o => o === 'missed').length >= 5 };
+  const api = { correct, miss, helped, busy: r.busy, struggling: isStruggling(r.mode) };
   return (
     <div class="screen round-screen">
       <div class="roundbar">
@@ -19,8 +18,9 @@ export function RoundScreen() {
         <BoltPile />
       </div>
       <main class="card">
-        <View key={r.key} problem={r.problem} level={r.level} api={api} />
+        {!r.intro && <View key={r.key} problem={r.problem} level={r.level} api={api} />}
       </main>
+      {r.intro && r.level > 1 && <IntroCard money={mode.introMoney[r.level as 2 | 3]} onGo={introDone} />}
       {r.ended && <EndOverlay />}
     </div>
   );

@@ -3,7 +3,7 @@ import { MONEY, type MoneyKey } from '../../money/money';
 import { Ask } from '../../round/Ask';
 import { Money } from '../../ui/Money';
 import { toast } from '../../ui/toast';
-import type { Phrase } from '../../voice/phrases';
+import { moneyIs, type Phrase } from '../../voice/phrases';
 import { speaking, type Item } from '../../voice/say';
 import type { ModeViewProps } from '../mode';
 import { checkLearn, dimeTip, type LearnProblem } from './learn';
@@ -32,7 +32,7 @@ export function LearnView({ problem: p, api }: ModeViewProps<LearnProblem>) {
     if ('choices' in p) void toast('Try again!', 'Try again!');
     else if (p.kind === 'find') void toast(`That's a ${m.name}. Find the ${t.name}!`, `That's a ${m.name}.`, `Find the ${t.name}!`);
     else {
-      const lines: Phrase[] = [`${t.name} is ${t.value}.` as Phrase, `${m.name} is ${m.value}.` as Phrase];
+      const lines: Phrase[] = [moneyIs(p.target), moneyIs(k)];
       if (dimeTip(k, p.target)) lines.push('The dime is small, but it is worth more!');
       void toast(lines.join(' '), ...lines);
     }
