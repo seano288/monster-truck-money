@@ -199,3 +199,4 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .ctruck .load{position:absolute;left:12%;top:8%;display:flex;gap:2px}
 .cprop{position:absolute;bottom:14px;font-size:calc(70px*var(--u));line-height:1;display:flex;gap:6px;align-items:flex-end}
 .reward .btns,.reward .icon-btn{transition:opacity .3s,filter .3s}
+.blocker{position:fixed;inset:0;z-index:45}

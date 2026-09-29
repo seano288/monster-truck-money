@@ -2,7 +2,8 @@
 // swings the camera there and opens that Slot's sheet of 4 Mods (bottom sheet in portrait, side panel in landscape).
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
-import { HORNS, sClink, sFanfare, sNope } from '../audio/sfx';
+import { HORNS, sClink, sNope } from '../audio/sfx';
+import { celebrateUnlock } from '../celebrate/garageShow';
 import { game } from '../game/store';
 import { startRound } from '../round/round';
 import { Bolt, BoltPile, IconButton } from '../ui/bits';
@@ -20,6 +21,7 @@ export function GarageScreen() {
   const [stage, setStage] = useState<GarageStage | null>(null);
   const [sheet, setSheet] = useState<SlotId | null>(null);
   const [wiggle, setWiggle] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false); // only for the length of an unlock jump
   const body = currentBody(), f = currentFit();
 
   useEffect(() => {
@@ -54,11 +56,11 @@ export function GarageScreen() {
       if (slot === 'horn') HORNS[rung]!();
       else { sClink(); void say(modName(slot, rung)); }
     } else if (result === 'unlocked') {
-      const mod = modId(slot, rung as 1 | 2 | 3);
-      sFanfare();
-      if (slot === 'horn') setTimeout(() => HORNS[rung]!(), 500);
-      void say(gotLine(mod));
-      stage?.play('hop');
+      const r = rung as 1 | 2 | 3;
+      if (!stage) return;
+      const ms = celebrateUnlock(stage, stageEl.current!, slot, r, gotLine(modId(slot, r)));
+      setBlocked(true);
+      setTimeout(() => setBlocked(false), ms);
     } else {
       sNope();
       void say(...needLines(modId(slot, rung as 1 | 2 | 3)));
@@ -110,6 +112,7 @@ export function GarageScreen() {
           </div>
         </div>
       )}
+      {blocked && <div class="blocker" />}
     </div>
   );
 }
