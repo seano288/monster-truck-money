@@ -22,4 +22,9 @@ _Avoid_: Category, part type
 
 **Mod**: A part or look that goes in one Slot (tires, paint, flames, lights and so on). A Mod is unlocked once, by spending Bolts, and cooler Mods cost more. After that it can be fitted to any Body or taken off freely.
 
+**Rung**: A Mod's step within its Slot: first, second or top. A higher Rung looks cooler and costs more. Each Slot also has a free default that is not a Rung.
+_Avoid_: Tier, level (Level means how hard a Game Mode is)
+
+**Goal**: The one locked Mod the player is saving Bolts toward, shown as a progress bar while they play. It is the cheapest locked Mod unless the player taps another locked Mod to choose it.
+
 **Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost.

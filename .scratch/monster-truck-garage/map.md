@@ -29,10 +29,12 @@ A build-ready spec (`.scratch/monster-truck-garage/spec.md`) for the next versio
 - [Prototype the app layout and the game screens](issues/07-app-shell-and-game-screens.md): "Tile home" (A of three): a big Garage tile plus three Game Mode tiles, full-screen Rounds with a 🏠/stars/goal/Bolts bar, an end-of-Round overlay with 🔧 Garage / ▶ Play again, and the Garage as its own screen; every phrase uses the game's recorded voice, with money amounts joined from dollar and cent clips.
 - [Prototype the sound and celebration moments](issues/08-sound-and-celebration.md): "Truck show" (C of three): the Truck acts out each moment (drives the Bolts in, wheelies for a Level up, crushes a mode's padlock, ramp-flips for ⭐; hop, spin jump or big double-spin jump in the Garage by Mod rung), growing over three tiers; no taps until a moment ends; sounds are made in code and the voice adds "Wow!" and "That's the best one!".
 - [Try the prototypes on the real iPad](issues/09-try-prototypes-on-ipad.md): everything held up on the device: joined amounts sound natural, the 3D moves run smoothly, 7 s combos are fine, no skip is needed, and nothing scrolls.
+- [Assemble the spec and plan the split](issues/10-assemble-spec-and-split.md): `spec.md` is written, with the full phrase list as patterns, guardrails for new modes and a real-money shop, and an 11-slice build plan (first playable is a Learn the Coins Round, cutover after the Garage, celebrations after that); Home Screen icon still open.
+- [Prototype the Home Screen icon](issues/11-home-screen-icon.md): "Truck head-on" (A of three), a red Truck on big tires on a yellow sunburst, drawn as SVG in code and turned into PNGs at build time (180, 192, 512 and maskable); named "Truck Money"; theme and background `#23252b`.
 
 ## Not yet specified
 
-_(none: the remaining fog graduated into "Try the prototypes on the real iPad" and "Assemble the spec and plan the split")_
+_(none: the way to the destination is clear)_
 
 ## Out of scope
 
