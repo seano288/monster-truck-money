@@ -1,8 +1,11 @@
 # Glossary
 
-**Game Mode**: One kind of money practice. There are three: Learn the Coins (names and values), Count the Cash (how much is here?) and Pay the Garage (pick the right money).
+**Game Mode**: One kind of money practice. There are three: Learn the Coins (names and values), Count the Cash (how much is here?) and Pay the Shop (pick the right money). They open in that order: each one after the previous reaches Level 2. The player picks which open Game Mode to play.
+_Avoid_: Pay the Garage (it clashes with the Garage, which uses Bolts, not money)
 
-**Level**: How hard a Game Mode is, set by which money appears. Level 1 uses pennies, nickels and dimes, Level 2 adds quarters and Level 3 adds $1 and $5 bills. The game raises the Level itself as the player shows mastery; nobody picks it by hand.
+**Level**: How hard a Game Mode is, set by which money appears. Level 1 uses pennies, nickels and dimes, Level 2 adds quarters and Level 3 adds $1 and $5 bills. Each Game Mode has its own Level. The game raises it itself when the player shows mastery; nobody picks it by hand, and it never goes down.
+
+**Mastery**: Getting 8 of the last 10 problems in a Game Mode right on the first try without help. It raises that Game Mode's Level.
 
 **Round**: A short run of problems in one Game Mode that ends in a reward.
 
