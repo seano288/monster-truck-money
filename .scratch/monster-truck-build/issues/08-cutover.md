@@ -8,8 +8,17 @@ Spec: [Monster Truck Money, the Garage version](../../monster-truck-garage/spec.
 
 **Status:** ready-for-human
 
-- [ ] The Pages workflow publishes the new build at the root; the old single-file app and the `next/` preview are retired
+- [x] The Pages workflow publishes the new build at the root; the old single-file app and the `next/` preview are retired
 - [ ] Installed on the iPad from Safari via Add to Home Screen (install before play: Safari-tab storage is separate)
 - [ ] The Home Screen shows the "Truck Money" icon and name, and the launch screen is dark
 - [ ] With the iPad offline, the app opens, speaks and plays a Round
 - [ ] Bolts and the Garage survive closing the app and restarting the iPad
+
+## Comments
+
+**2026-09-29, Claude:** implemented in `986dbf1` on `wayfinder/monster-truck-garage`.
+Still open:
+- Installed on the iPad from Safari via Add to Home Screen: needs the iPad, after merging to main
+- The Home Screen shows the "Truck Money" icon and name, and the launch screen is dark: needs the iPad
+- With the iPad offline, the app opens, speaks and plays a Round: needs the iPad (the headless offline check from 07 passes)
+- Bolts and the Garage survive closing the app and restarting the iPad: needs the iPad

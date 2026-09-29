@@ -8,12 +8,17 @@ Spec: [Monster Truck Money, the Garage version](../../monster-truck-garage/spec.
 
 **Status:** ready-for-agent
 
-- [ ] A shared mode interface: make a problem, check an answer, its Level table, its intro money and its phrases; Home tiles are built from the list of modes
-- [ ] Mastery: 8 of the last 10 right on the first try without help; the window is saved across sessions and clears on Level up
-- [ ] Levels start at 1, never go down, top out at 3: Level 2 adds quarters, Level 3 adds $1 and $5 bills
-- [ ] Level up plays "Level up!" then "Now you get quarters!" or "Now you get dollar bills!" in the end-of-Round overlay
-- [ ] The introduction card ("Look! New money! This is a {money}. It is worth {value}.") comes before the next Round in that mode, and a pending card survives an app restart
-- [ ] Mastery at Level 3 shows the ⭐ on the tile and plays "You are a Learn the Coins star!"
-- [ ] Struggle help: after 5 misses in the last 10, help is offered after a single miss; problems solved with help don't count toward Mastery
-- [ ] Level dots on the tile show the Level
-- [ ] Vitest covers the window, Level up, never-lower, ⭐ and struggle rules
+- [x] A shared mode interface: make a problem, check an answer, its Level table, its intro money and its phrases; Home tiles are built from the list of modes
+- [x] Mastery: 8 of the last 10 right on the first try without help; the window is saved across sessions and clears on Level up
+- [x] Levels start at 1, never go down, top out at 3: Level 2 adds quarters, Level 3 adds $1 and $5 bills
+- [x] Level up plays "Level up!" then "Now you get quarters!" or "Now you get dollar bills!" in the end-of-Round overlay
+- [x] The introduction card ("Look! New money! This is a {money}. It is worth {value}.") comes before the next Round in that mode, and a pending card survives an app restart
+- [x] Mastery at Level 3 shows the ⭐ on the tile and plays "You are a Learn the Coins star!"
+- [x] Struggle help: after 5 misses in the last 10, help is offered after a single miss; problems solved with help don't count toward Mastery
+- [x] Level dots on the tile show the Level
+- [x] Vitest covers the window, Level up, never-lower, ⭐ and struggle rules
+
+## Comments
+
+**2026-09-29, Claude:** implemented in `b76da96` on `wayfinder/monster-truck-garage`.
+Every item is covered by Vitest, the build, or the headless checks.

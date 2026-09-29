@@ -8,11 +8,16 @@ Spec: [Monster Truck Money, the Garage version](../../monster-truck-garage/spec.
 
 **Status:** ready-for-agent
 
-- [ ] The mode plugs into the shared mode interface; the unlock chain is built from the list of modes
-- [ ] Locked tile: grey with a padlock; tapping plays "Learn more coins to open this!"
-- [ ] Opening plays "You opened Count the Cash!" in the end-of-Round overlay; the tile pulses and replays the line on Home until he taps it (saved)
-- [ ] Piles are sorted biggest first; the prompt and each choice are read aloud with the choice's button lit
-- [ ] Level ranges: L1 at most 5 pieces up to 30¢; L2 at most 6 up to 75¢; L3 at most 6 up to $3 with $1 bills and a $5 now and then
-- [ ] 🔎 Help me count, 👀 Show me all the money and ↩ work; using help marks the problem "with help"; struggle help runs Help me count automatically
-- [ ] Its own Level, Mastery, intro cards and ⭐ work as in 04
-- [ ] Vitest covers problem generation within each Level's range and the unlock chain
+- [x] The mode plugs into the shared mode interface; the unlock chain is built from the list of modes
+- [x] Locked tile: grey with a padlock; tapping plays "Learn more coins to open this!"
+- [x] Opening plays "You opened Count the Cash!" in the end-of-Round overlay; the tile pulses and replays the line on Home until he taps it (saved)
+- [x] Piles are sorted biggest first; the prompt and each choice are read aloud with the choice's button lit
+- [x] Level ranges: L1 at most 5 pieces up to 30¢; L2 at most 6 up to 75¢; L3 at most 6 up to $3 with $1 bills and a $5 now and then
+- [x] 🔎 Help me count, 👀 Show me all the money and ↩ work; using help marks the problem "with help"; struggle help runs Help me count automatically
+- [x] Its own Level, Mastery, intro cards and ⭐ work as in 04
+- [x] Vitest covers problem generation within each Level's range and the unlock chain
+
+## Comments
+
+**2026-09-29, Claude:** implemented in `95ab2a3` on `wayfinder/monster-truck-garage`.
+Every item is covered by Vitest, the build, or the headless checks.

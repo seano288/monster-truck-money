@@ -8,11 +8,16 @@ Spec: [Monster Truck Money, the Garage version](../../monster-truck-garage/spec.
 
 **Status:** ready-for-agent
 
-- [ ] A typed phrase list is the single source; `say()` accepts only its type
-- [ ] The existing voice tool (`tools/make_voice.py`) records clips from that list as separate audio files plus a generated clip index
-- [ ] The build fails with the missing phrase's text when a clip is missing
-- [ ] Spoken text goes through the existing `speakable()` rewrites
-- [ ] `say()` joins amounts from pieces ("It costs" + "2 dollars" + "25 cents"); Vitest covers the amount-to-pieces maths (singulars, cents only, dollars only)
-- [ ] The base set is recorded: amount pieces, Learn the Coins lines, cheers and shared Round lines
-- [ ] There is no browser-voice fallback
-- [ ] Tapping start speaks "Let's go!"
+- [x] A typed phrase list is the single source; `say()` accepts only its type
+- [x] The existing voice tool (`tools/make_voice.py`) records clips from that list as separate audio files plus a generated clip index
+- [x] The build fails with the missing phrase's text when a clip is missing
+- [x] Spoken text goes through the existing `speakable()` rewrites
+- [x] `say()` joins amounts from pieces ("It costs" + "2 dollars" + "25 cents"); Vitest covers the amount-to-pieces maths (singulars, cents only, dollars only)
+- [x] The base set is recorded: amount pieces, Learn the Coins lines, cheers and shared Round lines
+- [x] There is no browser-voice fallback
+- [x] Tapping start speaks "Let's go!"
+
+## Comments
+
+**2026-09-29, Claude:** implemented in `6e41020` on `wayfinder/monster-truck-garage`.
+Every item is covered by Vitest, the build, or the headless checks.

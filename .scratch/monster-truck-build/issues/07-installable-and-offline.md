@@ -8,10 +8,15 @@ Spec: [Monster Truck Money, the Garage version](../../monster-truck-garage/spec.
 
 **Status:** ready-for-agent
 
-- [ ] The icon is one 512×512 SVG in code (background layer + art layer), rasterised at build time; no image files are committed
-- [ ] Ships `apple-touch-icon` 180×180, manifest 192 and 512 (`purpose: any`), and a maskable 512 with the art at 80% on the same yellow; all full squares with no transparency
-- [ ] `apple-mobile-web-app-title` and manifest `short_name` are "Truck Money"; manifest `name` and `<title>` are "Monster Truck Money"
-- [ ] `theme_color` and `background_color` are `#23252b`, and the page paints it first
-- [ ] `vite-plugin-pwa` precaches the app, clips and code with `autoUpdate`, applied on the next launch
-- [ ] The service worker registers only on the web; nothing reads the Cache API, and the app works without the service worker
-- [ ] A headless check loads the build, goes offline and reloads successfully
+- [x] The icon is one 512×512 SVG in code (background layer + art layer), rasterised at build time; no image files are committed
+- [x] Ships `apple-touch-icon` 180×180, manifest 192 and 512 (`purpose: any`), and a maskable 512 with the art at 80% on the same yellow; all full squares with no transparency
+- [x] `apple-mobile-web-app-title` and manifest `short_name` are "Truck Money"; manifest `name` and `<title>` are "Monster Truck Money"
+- [x] `theme_color` and `background_color` are `#23252b`, and the page paints it first
+- [x] `vite-plugin-pwa` precaches the app, clips and code with `autoUpdate`, applied on the next launch
+- [x] The service worker registers only on the web; nothing reads the Cache API, and the app works without the service worker
+- [x] A headless check loads the build, goes offline and reloads successfully
+
+## Comments
+
+**2026-09-29, Claude:** implemented in `6179177` on `wayfinder/monster-truck-garage`.
+Every item is covered by Vitest, the build, or the headless checks.
