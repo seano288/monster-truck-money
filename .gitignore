@@ -4,3 +4,4 @@
 .windsurf/
 node_modules/
 dist/
+.venv/
