@@ -28,3 +28,10 @@ export const MONEY: Record<MoneyKey, Money> = {
 export const biggestFirst = (a: MoneyKey, b: MoneyKey) => MONEY_KEYS.indexOf(a) - MONEY_KEYS.indexOf(b);
 export const total = (keys: readonly MoneyKey[]) => keys.reduce((s, k) => s + MONEY[k].cents, 0);
 export const fmt = (cents: number) => (cents < 100 ? `${cents}¢` : `$${(cents / 100).toFixed(2)}`);
+
+/** The money each Level uses: Level 1 pennies, nickels and dimes; Level 2 adds quarters; Level 3 adds $1 and $5 bills. */
+export const LEVEL_MONEY: Record<1 | 2 | 3, readonly MoneyKey[]> = {
+  1: ['d', 'n', 'p'],
+  2: ['q', 'd', 'n', 'p'],
+  3: ['b5', 'b1', 'q', 'd', 'n', 'p'],
+};

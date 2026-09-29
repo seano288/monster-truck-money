@@ -1,25 +1,32 @@
-import { signal } from '@preact/signals';
 import { unlockAudio } from '../audio/context';
+import { RoundScreen } from '../round/RoundScreen';
+import { Toast } from '../ui/toast';
 import { say } from '../voice/say';
-
-const started = signal(false);
+import { Home } from './Home';
+import { screen } from './nav';
 
 function start() {
   unlockAudio(); // sound needs this tap on iPad Safari
   void say("Let's go!");
-  started.value = true;
+  screen.value = 'home';
 }
 
 export function App() {
-  if (!started.value) return <StartScreen onStart={start} />;
-  return <div class="screen" />;
+  return (
+    <>
+      {screen.value === 'start' && <StartScreen />}
+      {screen.value === 'home' && <Home />}
+      {screen.value === 'round' && <RoundScreen />}
+      <Toast />
+    </>
+  );
 }
 
-function StartScreen({ onStart }: { onStart: () => void }) {
+function StartScreen() {
   return (
     <div class="start">
       <h1>Monster Truck<br />Money</h1>
-      <button class="big-btn go start-btn" aria-label="Start" onClick={onStart}>
+      <button class="big-btn go start-btn" aria-label="Start" onClick={start}>
         <span class="e">▶</span>
       </button>
     </div>
