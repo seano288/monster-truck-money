@@ -37,3 +37,12 @@ export const sBad = () => tone(160, 0.3, 'square', 0, 0.08);
 export const sClink = (when = 0) => { tone(1800, 0.08, 'triangle', when, 0.1); tone(2600, 0.1, 'triangle', when + 0.04, 0.06); };
 export const sCount = (i: number) => tone(400 + i * 60, 0.12, 'triangle', 0, 0.1);
 export const sFanfare = () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.25, 'triangle', i * 0.12, 0.14));
+
+/** The four Horn Mods, by Rung: Beep, Honk, Air Horn, Roar. */
+export const HORNS: readonly (() => void)[] = [
+  () => tone(880, 0.18, 'square', 0, 0.2),
+  () => { tone(392, 0.45, 'sawtooth', 0, 0.14); tone(494, 0.45, 'sawtooth', 0, 0.14); },
+  () => { tone(233, 1, 'sawtooth', 0, 0.16); tone(311, 1, 'sawtooth', 0, 0.16); tone(370, 1, 'sawtooth', 0, 0.1); },
+  () => { tone(110, 1.2, 'sawtooth', 0, 0.3, 45); tone(160, 1.1, 'square', 0, 0.1, 60); noise({ dur: 1.1, f: 500 }); },
+];
+export const sNope = () => tone(220, 0.22, 'square', 0, 0.08, 160);

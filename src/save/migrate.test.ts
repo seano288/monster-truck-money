@@ -28,3 +28,25 @@ describe('migrate', () => {
     expect(s.modes.learn.level).toBe(1);
   });
 });
+
+describe('migrate: the Garage', () => {
+  it('keeps the chosen Body, the Mods and the Goal', () => {
+    const s = migrate({ version: 1, body: 'bigfoot', unlocked: ['paint:1', 'tires:2'], goal: 'horn:3', fitted: { bigfoot: { paint: 1, tires: 2 } } });
+    expect(s.body).toBe('bigfoot');
+    expect(s.unlocked).toEqual(['paint:1', 'tires:2']);
+    expect(s.goal).toBe('horn:3');
+    expect(s.fitted.bigfoot).toMatchObject({ paint: 1, tires: 2, horn: 0 });
+    expect(s.fitted.pickup).toMatchObject({ paint: 0, tires: 0 });
+  });
+
+  it('never has a Mod fitted that is not unlocked', () => {
+    const s = migrate({ version: 1, unlocked: [], fitted: { pickup: { paint: 3 } } });
+    expect(s.fitted.pickup.paint).toBe(0);
+  });
+
+  it('drops a Goal that is already unlocked, and unknown Mods', () => {
+    const s = migrate({ version: 1, unlocked: ['paint:1', 'wings:9'], goal: 'paint:1' });
+    expect(s.unlocked).toEqual(['paint:1']);
+    expect(s.goal).toBeNull();
+  });
+});

@@ -1,4 +1,8 @@
 import { unlockAudio } from '../audio/context';
+import { BodyPicker } from '../garage/BodyPicker';
+import { GarageScreen } from '../garage/GarageScreen';
+import { IconDefs } from '../garage/icons';
+import { game } from '../game/store';
 import { RoundScreen } from '../round/RoundScreen';
 import { Toast } from '../ui/toast';
 import { say } from '../voice/say';
@@ -8,7 +12,7 @@ import { screen } from './nav';
 function start() {
   unlockAudio(); // sound needs this tap on iPad Safari
   void say("Let's go!");
-  screen.value = 'home';
+  screen.value = game.value.body ? 'home' : 'body'; // first launch only: choose a Body
 }
 
 export function App() {
@@ -16,7 +20,10 @@ export function App() {
     <>
       {screen.value === 'start' && <StartScreen />}
       {screen.value === 'home' && <Home />}
+      {screen.value === 'body' && <BodyPicker />}
       {screen.value === 'round' && <RoundScreen />}
+      {screen.value === 'garage' && <GarageScreen />}
+      <IconDefs />
       <Toast />
     </>
   );

@@ -3,7 +3,10 @@ import { MODES } from '../modes/modes';
 import { startRound } from '../round/round';
 import { sBad } from '../audio/sfx';
 import { BoltPile, LevelDots, TruckArt } from '../ui/bits';
+import { currentFit } from '../garage/garage';
 import { screen } from './nav';
+
+const PAINT = ['#8d96a3', '#1e7bff', '#ff6a00', '#c04dff'];
 
 export function Home() {
   const s = game.value;
@@ -15,7 +18,7 @@ export function Home() {
       </header>
       <div class="home">
         <button class="tile t-garage" aria-label="Garage" onClick={() => (screen.value = 'garage')}>
-          <TruckArt />
+          <TruckArt color={PAINT[currentFit().paint]} />
           <span class="nm">🔧 Garage</span>
         </button>
         {MODES.map(({ id, name, icon }) => {

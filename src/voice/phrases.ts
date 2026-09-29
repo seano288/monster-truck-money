@@ -1,5 +1,6 @@
 // The single typed list of everything the game says. tools/make_voice.py records a clip for each entry,
 // and the build fails if any is missing. say() accepts only these phrases (and amounts, joined from pieces).
+import { BODY_NAMES, SLOTS, type BodyName, type ModName, type SlotName } from '../garage/catalog';
 import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
 import { MODE_NAMES, type ModeName } from '../modes/ids';
 import { allAmountPieces, type AmountPiece } from './amount';
@@ -42,8 +43,13 @@ const PROGRESS = ['You earned 3 Bolts!', 'Level up!', 'Now you get quarters!', '
 type ModePhrase = `You are a ${ModeName} star!`;
 const modePhrases = (): ModePhrase[] => MODE_NAMES.map(m => `You are a ${m} star!` as const);
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | AmountPiece;
+// ---------- Garage ----------
+const GARAGE = ['Garage!'] as const;
+type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName;
+const garagePhrases = (): GaragePhrase[] => [...GARAGE, ...Object.values(BODY_NAMES), ...SLOTS.map(s => s.name), ...SLOTS.flatMap(s => s.mods)];
+
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | GaragePhrase | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...introPhrases(), ...PROGRESS, ...modePhrases(), ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...introPhrases(), ...PROGRESS, ...modePhrases(), ...garagePhrases(), ...allAmountPieces()])];
