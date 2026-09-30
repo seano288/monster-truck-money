@@ -46,6 +46,17 @@ export const HORNS: readonly (() => void)[] = [
   () => { tone(110, 1.2, 'sawtooth', 0, 0.3, 45); tone(160, 1.1, 'square', 0, 0.1, 60); noise({ dur: 1.1, f: 500 }); },
   () => { for (const w of [0, 0.75]) for (const f of [185, 233, 277, 370]) tone(f, w ? 1.3 : 0.55, 'sawtooth', w, 0.09); }, // a three-chime train horn, twice
 ];
+/** The five Engine Mods, by Rung, each beefier than the last: Putt-Putt, Rumble, V8, Jet Turbine, Rocket. */
+export const ENGINES: readonly (() => void)[] = [
+  () => { for (let i = 0; i < 5; i++) tone(95, 0.07, 'square', i * 0.14, 0.1, 80); },
+  () => { tone(55, 0.9, 'sawtooth', 0, 0.16, 75); noise({ dur: 0.9, vol: 0.18, f: 250, beat: 0.07 }); },
+  () => { tone(58, 1.1, 'sawtooth', 0, 0.2, 190); tone(87, 1.1, 'square', 0, 0.07, 280); noise({ dur: 1.1, vol: 0.28, f: 450, beat: 0.045, grow: true }); },
+  () => { tone(420, 1.4, 'sawtooth', 0, 0.05, 2600); tone(70, 1.4, 'sawtooth', 0, 0.16, 120); noise({ dur: 1.4, vol: 0.32, type: 'bandpass', f: 500, f2: 3200 }); },
+  () => { // a whoosh as it lights, then a roar
+    noise({ dur: 0.5, vol: 0.3, type: 'bandpass', f: 300, f2: 4000 });
+    noise({ dur: 1.6, vol: 0.5, f: 1400, when: 0.35 }); tone(48, 1.6, 'sawtooth', 0.35, 0.28, 32); tone(96, 1.4, 'square', 0.35, 0.08, 60);
+  },
+];
 export const sNope = () => tone(220, 0.22, 'square', 0, 0.08, 160);
 
 // ---------- celebration sounds ----------

@@ -5,7 +5,7 @@
 // wings, spinning lasers and a roof-top train horn.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
-import type { BodyId, Fit } from '../catalog';
+import type { BodyId, Fit, SlotId } from '../catalog';
 import { BODIES, LIFT, parsePath, TIRE_R, TIRE_W, toX, toY, U, type BodyShape } from './bodies';
 
 const V3 = THREE.Vector3, V2 = THREE.Vector2;
@@ -101,7 +101,7 @@ export interface BuiltTruck {
   group: THREE.Group;
   anim: TruckAnim;
   /** Hotspot anchors in the Truck's space; the side ones are mirrored to whichever side the camera is on. */
-  anchors(side: 1 | -1): Record<'tires' | 'paint' | 'decals' | 'lights' | 'horn', { p: THREE.Vector3; n: THREE.Vector3 | null; min: number }>;
+  anchors(side: 1 | -1): Record<SlotId, { p: THREE.Vector3; n: THREE.Vector3 | null; min: number }>;
   dispose(): void;
 }
 
@@ -357,6 +357,7 @@ class Builder {
           decals: sideAt(B.hot.decals),
           lights: { p: new V3(toX(B.front) + 0.14, ch + toY(B.head[1]), 0), n: new V3(1, 0, 0), min: -0.15 },
           horn: { p: new V3(toX(B.hot.horn[0]), ch + toY(B.hot.horn[1]), 0), n: null, min: 0 },
+          engine: { p: new V3(toX(B.hot.engine[0]), ch + toY(B.hot.engine[1]), 0), n: null, min: 0 },
         };
       },
       dispose: () => {

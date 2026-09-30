@@ -50,6 +50,22 @@ function partSvg(slot: SlotId, r: Rung): string {
       for (let i = 0; i <= r; i++) s += `<path d="M${60 + i * 9},${38 - i * 6} q ${12 + i * 3} ${12 + i * 6} 0 ${24 + i * 12}" stroke="${c}" stroke-width="5" fill="none" stroke-linecap="round"/>`;
       return s;
     }
+    case 'engine': {
+      if (r === 4) { // a rocket nozzle with a gold flame
+        return '<path d="M4,50 C14,34 30,38 40,44 L40,56 C30,62 14,66 4,50Z" fill="#ffc21a"/><path d="M14,50 C20,43 30,45 40,48 L40,52 C30,55 20,57 14,50Z" fill="#fff4b0"/>'
+          + '<polygon points="40,40 56,30 56,70 40,60" fill="#555" stroke="#111" stroke-width="3" stroke-linejoin="round"/><rect x="56" y="30" width="36" height="40" rx="8" fill="#e8e8e8" stroke="#111" stroke-width="3"/><rect x="66" y="30" width="6" height="40" fill="#e63946"/>';
+      }
+      if (r === 3) { // a turbine intake with blades
+        let s = '<circle cx="50" cy="50" r="38" fill="#b9c0c8" stroke="#111" stroke-width="4"/><circle cx="50" cy="50" r="30" fill="#2d3650"/>';
+        for (let i = 0; i < 8; i++) { const a = (i * Math.PI) / 4; s += `<path d="M50,50 L${(50 + 28 * Math.cos(a)).toFixed(1)},${(50 + 28 * Math.sin(a)).toFixed(1)} L${(50 + 28 * Math.cos(a + 0.45)).toFixed(1)},${(50 + 28 * Math.sin(a + 0.45)).toFixed(1)}Z" fill="#d8dde3"/>`; }
+        return s + '<circle cx="50" cy="50" r="8" fill="#ffcc33" stroke="#111" stroke-width="2"/>';
+      }
+      // an engine block that grows pipes: 1 for Putt-Putt, 2 for Rumble, 4 chrome ones for V8
+      const pipes = [1, 2, 4][r]!, c = r === 2 ? '#e8e8e8' : '#8d96a3';
+      let s = `<rect x="18" y="44" width="64" height="38" rx="6" fill="${r === 2 ? '#e63946' : '#6b7385'}" stroke="#111" stroke-width="4"/>`;
+      for (let i = 0; i < pipes; i++) { const x = 50 - (pipes - 1) * 8 + i * 16; s += `<rect x="${x - 5}" y="20" width="10" height="26" rx="3" fill="${c}" stroke="#111" stroke-width="3"/>`; }
+      return s + (r === 0 ? '<circle cx="66" cy="16" r="6" fill="#ccc" opacity=".8"/>' : '');
+    }
   }
 }
 

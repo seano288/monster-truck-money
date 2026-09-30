@@ -20,7 +20,7 @@ _Avoid_: Starter Truck, model
 **Slot**: One place on the Truck that holds a single Mod at a time, such as Tires or Paint.
 _Avoid_: Category, part type
 
-**Mod**: A part or look that goes in one Slot (tires, paint, flames, lights and so on). A Mod is unlocked once, by spending Bolts (or money, for a Legendary), and cooler Mods cost more. After that it can be fitted to any Body or taken off freely.
+**Mod**: A part, look or sound that goes in one Slot (tires, paint, flames, lights, an engine and so on). A Mod is unlocked once, by spending Bolts (or money, for a Legendary), and cooler Mods cost more. After that it can be fitted to any Body or taken off freely.
 
 **Rung**: A Mod's step within its Slot: first, second, top, then Legendary. A higher Rung looks cooler and costs more. The first three are paid in Bolts; the Legendary Rung is paid in money, tapped into the Pay the Shop tray to the exact price, and opens for purchase once the top Rung in its Slot is unlocked. Each Slot also has a free default that is not a Rung.
 _Avoid_: Tier, level (Level means how hard a Game Mode is)

@@ -8,7 +8,7 @@ import type { BodyId, Fit, SlotId } from '../catalog';
 import { buildTruck, type BuiltTruck } from './truck';
 
 // Camera per Slot when its sheet opens: [x, z] direction from the Truck, polar angle
-const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95] };
+const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1] };
 export const IDLE_SPIN_MS = 12000;
 
 /** The Truck's moves: a hop, a spin jump and a big double-spin jump. */
@@ -20,6 +20,19 @@ const ease = (k: number) => (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 
 interface Tween { t0: number; dur: number; from: { th: number; phi: number; r: number }; to: { th: number; phi: number; r: number } }
 
 export interface HotspotPlace { x: number; y: number; visible: boolean }
+
+/** Pushes visible hotspots that land closer than `d` pixels apart away from each other, so a Truck with many Slots keeps every one tappable. */
+export function spreadHotspots(places: Record<SlotId, HotspotPlace>, d: number) {
+  const shown = Object.values(places).filter(p => p.visible);
+  for (let pass = 0; pass < 4; pass++) {
+    for (let i = 0; i < shown.length; i++) for (let j = i + 1; j < shown.length; j++) {
+      const a = shown[i]!, b = shown[j]!, dx = b.x - a.x, dy = b.y - a.y, gap = Math.hypot(dx, dy);
+      if (gap >= d) continue;
+      const [ux, uy] = gap > 0.01 ? [dx / gap, dy / gap] : [1, 0], push = (d - gap) / 2;
+      a.x -= ux * push; a.y -= uy * push; b.x += ux * push; b.y += uy * push;
+    }
+  }
+}
 
 export class GarageStage {
   private renderer: THREE.WebGLRenderer;

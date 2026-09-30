@@ -63,8 +63,8 @@ describe('migrate: version 1 to 2', () => {
 
   it('gives the new Bodies default fits', () => {
     const s = migrate({ version: 1 });
-    expect(s.fitted.firetruck).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0 });
-    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0 });
+    expect(s.fitted.firetruck).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0 });
+    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0 });
   });
 
   it('shows the Legendaries locked', () => {
@@ -95,5 +95,21 @@ describe('migrate: Bodies and Legendaries', () => {
     expect(migrate({ version: 2, goal: 'body:schoolbus' }).goal).toBe('body:schoolbus');
     expect(migrate({ version: 2, goal: 'body:schoolbus', ownedBodies: ['schoolbus'] }).goal).toBeNull();
     expect(migrate({ version: 2, goal: 'lights:4' }).goal).toBeNull();
+  });
+});
+
+describe('migrate: the Engine Slot', () => {
+  it('loads a save from before the Engine with its fits kept and the Engine on Putt-Putt', () => {
+    const old = { version: 2, bolts: 9, unlocked: ['horn:3', 'horn:4'], fitted: { pickup: { tires: 0, paint: 0, decals: 0, lights: 0, horn: 4 } } };
+    const s = migrate(old);
+    expect(s.version).toBe(2);
+    expect(s.bolts).toBe(9);
+    expect(s.unlocked).toEqual(['horn:3', 'horn:4']);
+    expect(s.fitted.pickup).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 4, engine: 0 });
+  });
+
+  it('keeps an Engine Mod he unlocked and fitted', () => {
+    const s = migrate({ version: 2, unlocked: ['engine:2'], fitted: { jeep: { engine: 2 } } });
+    expect(s.fitted.jeep.engine).toBe(2);
   });
 });

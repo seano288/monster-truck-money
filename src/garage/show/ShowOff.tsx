@@ -1,8 +1,8 @@
 // Show Off: his Truck on stage, full screen. The lights dim, a spotlight falls on it, the turntable spins and the
-// crowd cheers with his Horn. Tapping the Truck makes it hop, jump or mega-jump with the horn, so he can perform it
-// for someone. ✕ goes back to the Garage.
+// crowd cheers with his Engine and Horn. Tapping the Truck makes it hop, jump or mega-jump with the horn, so he
+// can perform it for someone. ✕ goes back to the Garage.
 import { useEffect, useRef } from 'preact/hooks';
-import { HORNS, sCheer } from '../../audio/sfx';
+import { ENGINES, HORNS, sCheer } from '../../audio/sfx';
 import { sparks } from '../../celebrate/effects';
 import { say } from '../../voice/say';
 import { BODY_NAMES, type BodyId, type Rung } from '../catalog';
@@ -12,14 +12,15 @@ const ROUTINE: readonly Move[] = ['hop', 'jump', 'mega'];
 /** A press that moves less than this is a tap, not a spin of the turntable. */
 const TAP_PX = 12;
 
-interface Props { stage: GarageStage; canvas: HTMLCanvasElement; stageEl: HTMLElement; body: BodyId; horn: Rung; onClose: () => void }
+interface Props { stage: GarageStage; canvas: HTMLCanvasElement; stageEl: HTMLElement; body: BodyId; horn: Rung; engine: Rung; onClose: () => void }
 
-export function ShowOff({ stage, canvas, stageEl, body, horn, onClose }: Props) {
+export function ShowOff({ stage, canvas, stageEl, body, horn, engine, onClose }: Props) {
   const next = useRef(0);
 
   useEffect(() => {
     void say('Show time!');
     sCheer();
+    ENGINES[engine]!();
     const t = setTimeout(() => HORNS[horn]!(), 900);
     let down: { x: number; y: number } | null = null;
     const press = (e: PointerEvent) => { down = { x: e.clientX, y: e.clientY }; };

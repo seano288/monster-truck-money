@@ -4,7 +4,7 @@
 // the Truck on stage.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
-import { HORNS, sClink, sNope } from '../audio/sfx';
+import { ENGINES, HORNS, sClink, sNope } from '../audio/sfx';
 import { celebrateBody, celebrateUnlock } from '../celebrate/garageShow';
 import { game } from '../game/store';
 import { fmt } from '../money/money';
@@ -22,7 +22,7 @@ import {
 import { GoalBar } from './GoalBar';
 import { PartIcon } from './icons';
 import { ShowOff } from './show/ShowOff';
-import { GarageStage } from './three/stage';
+import { GarageStage, spreadHotspots } from './three/stage';
 
 export function GarageScreen() {
   const canvas = useRef<HTMLCanvasElement>(null), stageEl = useRef<HTMLDivElement>(null);
@@ -39,6 +39,7 @@ export function GarageScreen() {
     // three.js is in the main bundle, not a lazy chunk: an update can't leave the Garage pointing at a chunk that's gone
     const st = new GarageStage(canvas.current!, stageEl.current!);
     st.onHotspots = places => {
+      spreadHotspots(places, (Object.values(hots.current).find(Boolean)?.offsetWidth ?? 66) + 8);
       for (const [slot, p] of Object.entries(places) as [SlotId, (typeof places)[SlotId]][]) {
         const el = hots.current[slot];
         if (!el) continue;
@@ -57,6 +58,7 @@ export function GarageScreen() {
     setSheet(slot);
     stage?.focus(slot);
     if (slot === 'horn') HORNS[f.horn]!();
+    if (slot === 'engine') ENGINES[f.engine]!(); // he revs it
     void say(slotById(slot).name);
   }
   function closeSheet() { setSheet(null); stage?.focus(null); }
@@ -73,12 +75,13 @@ export function GarageScreen() {
 
   function tap(slot: SlotId, rung: Rung) {
     const result = tapMod(slot, rung);
+    if (slot === 'engine' && result !== 'unlocked') ENGINES[rung]!(); // he hears an Engine before he buys it
     if (result === 'fitted') {
       if (slot === 'horn') HORNS[rung]!();
-      else { sClink(); void say(modName(slot, rung)); }
+      else if (slot !== 'engine') { sClink(); void say(modName(slot, rung)); }
     } else if (result === 'unlocked') {
       const r = rung as 1 | 2 | 3;
-      if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, r, gotLine(modId(slot, r))));
+      if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, r, currentFit().engine, gotLine(modId(slot, r))));
     } else if (result === 'checkout') {
       setCheckout(slot);
     } else if (result === 'waiting') {
@@ -93,13 +96,13 @@ export function GarageScreen() {
   function paid(slot: SlotId, cents: number) {
     buyLegendary(slot, cents);
     setCheckout(null);
-    if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, LEGENDARY, gotLine(modId(slot, LEGENDARY))));
+    if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, LEGENDARY, currentFit().engine, gotLine(modId(slot, LEGENDARY))));
   }
 
   function tapBodyChip(b: BodyId) {
     const result = tapBody(b);
     if (result === 'switched') void say(BODY_NAMES[b]);
-    else if (result === 'bought') { if (!isStarter(b) && stage) block(celebrateBody(stage, stageEl.current!, gotLine(bodyItem(b)))); }
+    else if (result === 'bought') { if (!isStarter(b) && stage) block(celebrateBody(stage, stageEl.current!, currentFit().engine, gotLine(bodyItem(b)))); }
     else { nope(`body:${b}`); if (!isStarter(b)) void say(...needLines(bodyItem(b))); }
   }
 
@@ -127,7 +130,7 @@ export function GarageScreen() {
       </header>
       <div class="garage-stage" ref={stageEl}>
         <canvas ref={canvas} />
-        {showing && stage ? <ShowOff stage={stage} canvas={canvas.current!} stageEl={stageEl.current!} body={body} horn={f.horn} onClose={endShow} /> : (
+        {showing && stage ? <ShowOff stage={stage} canvas={canvas.current!} stageEl={stageEl.current!} body={body} horn={f.horn} engine={f.engine} onClose={endShow} /> : (
           <div class="garage-overlay">
             <div class="bodyname">{BODY_NAMES[body]}</div>
             <button class="arrow l" aria-label="Previous truck" onClick={() => bodyStep(-1)}>◀</button>
