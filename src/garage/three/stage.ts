@@ -1,17 +1,20 @@
 // The Garage stage: the Truck on a turntable he can spin, a camera that swings to a Slot's part,
-// hotspots that follow the parts, a slow spin after 12 s idle, and the Truck's jumps. For Show Off it dims the
-// lights, puts a spotlight on the Truck and spins the turntable.
+// hotspots that follow the parts, a slow spin after 12 s idle, and the Truck's jumps, each with a puff from the
+// Exhaust. For Show Off it dims the lights, puts a spotlight on the Truck, spins the turntable and puffs gently.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import type { BodyId, Fit, SlotId } from '../catalog';
+import { POINT_SCALE, PUFF } from './exhaust';
 import { buildTruck, type BuiltTruck } from './truck';
 
 // Camera per Slot when its sheet opens: [x, z] direction from the Truck, polar angle
-const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35] };
+const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35], exhaust: [-1, 0.9, 1.1] };
 export const IDLE_SPIN_MS = 12000;
 /** How long a Dragon Jaw snap takes: two chomps. */
 const SNAP_MS = 700;
+/** While jumping the Exhaust keeps puffing this often; idle in Show Off it puffs gently this often. */
+const TRAIL_MS = 150, IDLE_PUFF_MS = 1600;
 
 /** The Truck's moves: a hop, a spin jump and a big double-spin jump. */
 export const MOVES = { hop: { dur: 600, h: 0.35, spin: 0 }, jump: { dur: 1300, h: 1.1, spin: 1 }, mega: { dur: 2100, h: 1.9, spin: 2 } } as const;
@@ -43,11 +46,15 @@ export class GarageStage {
   private controls: OrbitControls;
   private truck: BuiltTruck | null = null;
   private sig = '';
+  private fitted: { body: BodyId; fit: Fit } | null = null;
   private tween: Tween | null = null;
   private lastTouch = performance.now();
   private off = { x: 0, y: 0 };
   private move: { kind: Move; t0: number } | null = null;
   private snapAt = -Infinity;
+  /** Puffs asked for since the last frame, sent out once the Truck is where it will be drawn. */
+  private puffs: number[] = [];
+  private lastPuff = 0;
   private raf = 0;
   private sheetOpen = false;
   private resizeObs: ResizeObserver;
@@ -104,14 +111,15 @@ export class GarageStage {
     this.raf = requestAnimationFrame(this.loop);
   }
 
-  /** Show this Body with these Mods fitted (rebuilt only when something changed). */
+  /** Show this Body with these Mods fitted (rebuilt only when something changed). A newly fitted Exhaust puffs. */
   setTruck(body: BodyId, fit: Fit) {
     const sig = body + JSON.stringify(fit);
     if (sig === this.sig) return;
-    this.sig = sig;
-    if (this.truck) { this.turntable.remove(this.truck.group); this.truck.dispose(); }
+    if (this.fitted?.body === body && this.fitted.fit.exhaust !== fit.exhaust) this.puff();
+    this.sig = sig; this.fitted = { body, fit: { ...fit } };
+    if (this.truck) { this.turntable.remove(this.truck.group, this.truck.exhaust.points); this.truck.dispose(); }
     this.truck = buildTruck(body, fit);
-    this.turntable.add(this.truck.group);
+    this.turntable.add(this.truck.group, this.truck.exhaust.points);
   }
 
   /** Swing the camera to a Slot's part and shift the Truck clear of its sheet; null goes back to the whole Truck. */
@@ -126,8 +134,11 @@ export class GarageStage {
     this.tween = { t0: performance.now(), dur: 850, from, to: { th: sp.theta + d, phi, r: this.fitDist(true) } };
   }
 
-  /** Play one of the Truck's jumps. */
-  play(kind: Move) { this.move = { kind, t0: performance.now() }; }
+  /** Play one of the Truck's jumps. The Exhaust puffs as it takes off, and keeps puffing through a jump. */
+  play(kind: Move) { this.move = { kind, t0: performance.now() }; this.puff(PUFF[kind]); }
+
+  /** A puff from the Exhaust, 0-1 strong. */
+  puff(strength: number = PUFF.rev) { this.puffs.push(strength); }
 
   /** A Dragon Jaw snaps shut twice (nothing happens without one). */
   snap() { this.snapAt = performance.now(); }
@@ -184,6 +195,7 @@ export class GarageStage {
     const w = this.stage.clientWidth, h = this.stage.clientHeight;
     if (!w || !h) return;
     this.renderer.setSize(w, h, false);
+    POINT_SCALE.value = (h * this.renderer.getPixelRatio()) / (2 * Math.tan(THREE.MathUtils.degToRad(this.camera.fov / 2)));
     this.camera.aspect = w / h;
     this.applyOffset();
     const land = w > h;
@@ -232,6 +244,10 @@ export class GarageStage {
         }
       }
       g.position.y = y;
+      if (this.move && this.move.kind !== 'hop' && now - this.lastPuff > TRAIL_MS) this.puff(PUFF.hop);
+      else if (this.showing && !this.move && now - this.lastPuff > IDLE_PUFF_MS) this.puff(PUFF.idle);
+      if (this.puffs.length) { g.updateMatrix(); for (const s of this.puffs) t.exhaust.puff(s, g.matrix); this.puffs = []; this.lastPuff = now; }
+      t.exhaust.step(Math.min(0.05, (now - this.lastFrame) / 1000));
       for (const w of t.anim.spin) w.rotation.z -= 0.06;
       if (t.anim.lasers) t.anim.lasers.rotation.y = now / 700;
       if (t.anim.glow) { const p = 0.65 + 0.35 * Math.sin(now / 220); t.anim.glow.m.opacity = p; t.anim.glow.l.intensity = 4 * p; }

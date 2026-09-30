@@ -62,7 +62,8 @@ export function GarageScreen() {
     setSheet(slot);
     stage?.focus(slot);
     if (slot === 'horn') HORNS[f.horn]!();
-    if (slot === 'engine') ENGINES[f.engine]!(); // he revs it
+    if (slot === 'engine') { ENGINES[f.engine]!(); stage?.puff(); } // he revs it
+    if (slot === 'exhaust') stage?.puff();
     void say(slotById(slot).name);
   }
   function closeSheet() { setSheet(null); stage?.focus(null); }
@@ -79,7 +80,7 @@ export function GarageScreen() {
 
   function tap(slot: SlotId, rung: Rung) {
     const result = tapMod(slot, rung);
-    if (slot === 'engine' && result !== 'unlocked') ENGINES[rung]!(); // he hears an Engine before he buys it
+    if (slot === 'engine' && result !== 'unlocked') { ENGINES[rung]!(); stage?.puff(); } // he hears an Engine before he buys it
     if (result === 'fitted') {
       if (slot === 'horn') HORNS[rung]!();
       else if (slot !== 'engine') { sClink(); void say(modName(slot, rung)); }

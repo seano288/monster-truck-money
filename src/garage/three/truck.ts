@@ -2,10 +2,11 @@
 // a clear-coat, one canvas texture for Paint and Decals projected from the side, a tube chassis with 4-link
 // suspension and coil-overs, lathe-turned tires with tread that grows per Mod, beadlock rims, and per-Body extras.
 // The Legendaries (Rung 4) go a step past the top Rung: gold spiked paddle tires, flaked gold paint, a skull with
-// wings, spinning lasers, a roof-top train horn and a gold dragon jaw that chomps.
+// wings, spinning lasers, a roof-top train horn, a gold dragon jaw that chomps and gold stacks that blast a rainbow.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
 import type { BodyId, Fit, SlotId } from '../catalog';
+import { Exhaust, type Tip } from './exhaust';
 import { BODIES, LIFT, parsePath, TIRE_R, TIRE_W, toX, toY, U, type BodyShape } from './bodies';
 
 const V3 = THREE.Vector3, V2 = THREE.Vector2;
@@ -102,6 +103,8 @@ export interface TruckAnim {
 export interface BuiltTruck {
   group: THREE.Group;
   anim: TruckAnim;
+  /** The Exhaust's puffs. They live in the turntable's space, not the Truck's, so the stage adds them there. */
+  exhaust: Exhaust;
   /** Hotspot anchors in the Truck's space; the side ones are mirrored to whichever side the camera is on. */
   anchors(side: 1 | -1): Record<SlotId, { p: THREE.Vector3; n: THREE.Vector3 | null; min: number }>;
   dispose(): void;
@@ -252,11 +255,7 @@ class Builder {
       body.add(this.cyl(0.006, 0.006, 0.6, M.dark, ax, ay + 0.3, W * 0.42));
       const tip = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), M.dark); tip.position.set(ax, ay + 0.6, W * 0.42); body.add(tip);
     }
-    if (bodyId === 'pickup') {
-      const x = toX(140);
-      for (const s of [-1, 1]) body.add(this.cyl(0.045, 0.045, 0.85, M.chrome, x, 0.87, s * W * 0.38), this.cyl(0.052, 0.045, 0.08, M.dark, x, 1.31, s * W * 0.38)); // exhaust stacks
-      body.add(this.box(toX(150) - toX(60) - 0.1, 0.01, W * 0.84, M.liner, (toX(60) + toX(150)) / 2, 0.45 + SH.bs + 0.006, 0)); // bed liner
-    }
+    if (bodyId === 'pickup') body.add(this.box(toX(150) - toX(60) - 0.1, 0.01, W * 0.84, M.liner, (toX(60) + toX(150)) / 2, 0.45 + SH.bs + 0.006, 0)); // bed liner
     if (bodyId === 'bigfoot') {
       for (const s of [-1, 1]) body.add(this.box(1.1, 0.04, 0.16, M.dark, toX(200), 0.02, s * (ext + 0.08))); // side steps
       const sp = this.wheel(0, 0.28, 0.2); sp.rotation.y = Math.PI / 2; sp.position.set(bw - 0.1, 0.42, 0); body.add(sp); // spare wheel
@@ -285,10 +284,6 @@ class Builder {
       const x = toX(80), y = toY(-124) + SH.bs;
       body.add(this.cyl(0.13, 0.02, 0.34, this.mat(std(0xd9a066, { roughness: 0.8 })), x, y + 0.17, 0, undefined, 16));
       const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 14), this.mat(std(0xffb3d1, { roughness: 0.6 }))); scoop.position.set(x, y + 0.4, 0); body.add(scoop);
-    }
-    if (bodyId === 'tractor') { // exhaust stack up through the hood
-      const x = toX(300), y = toY(-56) + SH.bs;
-      body.add(this.cyl(0.04, 0.04, 0.6, M.chrome, x, y + 0.3, W * 0.2), this.cyl(0.05, 0.04, 0.08, M.dark, x, y + 0.62, W * 0.2));
     }
     if (bodyId === 'dragster') {
       body.add(this.box(0.3, 0.16, 0.34, M.chrome, toX(292), 0.32 + SH.bs + 0.08, 0), this.box(0.22, 0.12, 0.3, M.dark, toX(296), 0.32 + SH.bs + 0.22, 0)); // blower + scoop
@@ -400,6 +395,46 @@ class Builder {
     }
   }
 
+  // --- Exhaust Mods: a tailpipe at the rear, then twin stacks behind the cab that grow, catch fire and turn gold ---
+  /** Where the stacks stand: x, the shell's top there (base), their tops, and how far out to each side. */
+  stackAt() {
+    const { B, W } = this, x = B.stack, base = toY(Math.min(...parsePath(B.path).flatMap(q => q.flatMap((a, i) => {
+      const b = q[(i + 1) % q.length]!;
+      return (a[0] - x) * (b[0] - x) <= 0 && a[0] !== b[0] ? [a[1] + ((b[1] - a[1]) * (x - a[0])) / (b[0] - a[0])] : [];
+    })))) + SH.bs - 0.02;
+    return { x: toX(x), base, top: Math.max(base + 0.45, toY(B.roof[2]) + 0.3), z: W * 0.38 };
+  }
+  /** The Tailpipe: a short pipe out of the back, low down on the left. A Tractor's is one stack up through its hood. */
+  tailpipe(stack: ReturnType<Builder['stackAt']>): Tip {
+    const { B, W, body, ch } = this;
+    if (this.bodyId === 'tractor') {
+      const { x, base } = stack, z = W * 0.2;
+      body.add(this.cyl(0.04, 0.04, 0.6, M.chrome, x, base + 0.3, z), this.cyl(0.05, 0.04, 0.08, M.dark, x, base + 0.62, z));
+      return { p: new V3(x, ch + base + 0.68, z), dir: new V3(0, 1, 0) };
+    }
+    const bx = toX(B.back) - SH.bs, y = 0.2, z = -W * 0.22;
+    body.add(this.cyl(0.05, 0.05, 0.32, M.chrome, bx, y, z, 'x', 16), this.cyl(0.06, 0.06, 0.05, M.dark, bx - 0.16, y, z, 'x', 16));
+    return { p: new V3(bx - 0.2, ch + y, z), dir: new V3(-1, 0.15, 0).normalize() };
+  }
+  exhaust(stack: ReturnType<Builder['stackAt']>): Tip[] {
+    const rung = this.f.exhaust;
+    if (rung === 0) return [this.tailpipe(stack)];
+    const { body, ch } = this, { x, base, top, z } = stack, L = top - base;
+    const r = [0, 0.045, 0.06, 0.055, 0.06][rung]!, pipe = rung === 4 ? M.gold : M.chrome, tips: Tip[] = [];
+    for (const s of [-1, 1]) {
+      const zz = s * z;
+      body.add(this.cyl(r, r, L, pipe, x, base + L / 2, zz, undefined, 16));
+      if (rung === 1) body.add(this.cyl(r + 0.007, r, 0.08, M.dark, x, top + 0.04, zz, undefined, 16)); // Twin Stacks: rain caps
+      if (rung >= 2) { // a flared mouth, and a black heat shield halfway up
+        body.add(this.cyl(r * 1.45, r, 0.1, pipe, x, top + 0.05, zz, undefined, 16));
+        body.add(this.cyl(r + 0.012, r + 0.012, L * 0.35, M.dark, x, base + L * 0.45, zz, undefined, 16));
+      }
+      if (rung >= 3) body.add(this.cyl(r * 1.5, r * 1.5, 0.025, this.glow(rung === 4 ? 0xff3df0 : 0xff5a00, 2.5), x, top + 0.1, zz, undefined, 16)); // a red-hot rim
+      tips.push({ p: new V3(x, ch + top + 0.1, zz), dir: new V3(0, 1, 0) });
+    }
+    return tips;
+  }
+
   // --- Horn Mods: only the Train Horn shows, as three chrome trumpets on the roof ---
   horn() {
     if (this.f.horn !== 4) return;
@@ -428,11 +463,13 @@ class Builder {
     this.grille(fx, headY);
     this.lights(fx, headY, w0, w1);
     this.horn();
+    const stack = this.stackAt(), exhaust = new Exhaust(f.exhaust, this.exhaust(stack)), tip = exhaust.tips[0]!.p;
     this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = !(o.material as THREE.Material).transparent; });
     const ch = this.ch;
     return {
       group: this.truck,
       anim: this.anim,
+      exhaust,
       anchors: side => {
         const sideAt = ([x, y]: Pt) => ({ p: new V3(toX(x), ch + toY(y), side * (W / 2 + 0.1)), n: new V3(0, 0, side), min: 0.2 });
         return {
@@ -443,12 +480,15 @@ class Builder {
           horn: { p: new V3(toX(B.hot.horn[0]), ch + toY(B.hot.horn[1]), 0), n: null, min: 0 },
           engine: { p: new V3(toX(B.hot.engine[0]), ch + toY(B.hot.engine[1]), 0), n: null, min: 0 },
           grille: { p: new V3(toX(B.front) + 0.14, ch + Math.max(0.05, headY - 0.16), 0), n: new V3(1, 0, 0), min: -0.15 }, // below Lights, the same for every Rung
+          exhaust: f.exhaust ? { p: new V3(stack.x, ch + stack.top, side * stack.z), n: null, min: 0 } // on a stack
+            : this.bodyId === 'tractor' ? { p: tip.clone(), n: null, min: 0 } : { p: tip.clone(), n: new V3(-1, 0, 0), min: -0.15 }, // on the Tailpipe
         };
       },
       dispose: () => {
         this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
         for (const m of this.own) if (!SHARED.has(m)) m.dispose();
         tex.dispose();
+        exhaust.dispose();
       },
     };
   }

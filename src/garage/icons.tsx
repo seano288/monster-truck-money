@@ -89,6 +89,24 @@ function partSvg(slot: SlotId, r: Rung): string {
       if (r === 2) s += `<path ${bar} stroke="#111" stroke-width="10"/><path ${bar} stroke="#c8ced6" stroke-width="6"/>`;
       return s;
     }
+    case 'exhaust': {
+      if (r === 0) { // a tailpipe out of the back with a little puff
+        return '<rect x="40" y="56" width="52" height="14" rx="4" fill="#d8dde3" stroke="#111" stroke-width="3"/><rect x="34" y="53" width="10" height="20" rx="3" fill="#333" stroke="#111" stroke-width="3"/>'
+          + '<circle cx="22" cy="58" r="9" fill="#ccc" opacity=".85"/><circle cx="10" cy="48" r="6" fill="#ccc" opacity=".6"/>';
+      }
+      // two stacks that grow, with plain puffs, then dark smoke, then flames, then a rainbow blast from gold stacks
+      const pipe = r === 4 ? '#ffc21a' : '#e8e8e8', w = r === 1 ? 10 : 13;
+      let s = '';
+      for (const x of [34, 66]) {
+        if (r === 1) s += `<circle cx="${x}" cy="22" r="7" fill="#ddd" opacity=".85"/><circle cx="${x + 6}" cy="10" r="5" fill="#ddd" opacity=".6"/>`;
+        if (r === 2) s += `<circle cx="${x}" cy="20" r="11" fill="#4a4a50"/><circle cx="${x + 7}" cy="7" r="8" fill="#4a4a50" opacity=".75"/>`;
+        if (r === 3) s += `<path d="M${x - 9},32 C${x - 12},18 ${x - 2},16 ${x},2 C${x + 4},14 ${x + 12},18 ${x + 9},32Z" fill="#ff6a00"/><path d="M${x - 5},32 C${x - 6},24 ${x},20 ${x},12 C${x + 3},20 ${x + 6},24 ${x + 5},32Z" fill="#ffe14d"/>`;
+        if (r === 4) ['#ff3b3b', '#ffb800', '#3dff8b', '#3dc8ff', '#c04dff'].forEach((c, i) => { s += `<circle cx="${x + (i - 2) * 5}" cy="${26 - i * 5}" r="${5 + i}" fill="${c}" opacity=".9"/>`; });
+        s += `<rect x="${x - w / 2}" y="32" width="${w}" height="54" rx="3" fill="${pipe}" stroke="#111" stroke-width="3"/>`;
+        if (r >= 2) s += `<rect x="${x - w / 2 - 3}" y="30" width="${w + 6}" height="7" rx="2" fill="${pipe}" stroke="#111" stroke-width="3"/><rect x="${x - w / 2}" y="52" width="${w}" height="16" fill="#333"/>`;
+      }
+      return s;
+    }
   }
 }
 
