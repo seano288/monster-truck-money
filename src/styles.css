@@ -137,7 +137,22 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .numwheel button{flex:1;min-height:calc(44px*var(--u));border-radius:18px;background:#2d3650;color:#ffc53d;font-size:calc(30px*var(--u));box-shadow:0 5px 0 #0007}
 .numwheel button:active{transform:translateY(3px);box-shadow:0 2px 0 #0007}
 .numwheel .digit{flex:1.6;display:flex;align-items:center;justify-content:center;border-radius:18px;background:#16181c;border:3px solid #3a4460;font:400 calc(64px*var(--u)) Bungee,sans-serif;line-height:1}
+.sheet.paint{height:54%}
+.swatches{flex:none;display:flex;gap:10px;overflow-x:auto;padding:4px 2px 8px;scrollbar-width:none}
+.swatch{position:relative;flex:none;width:calc(76px*var(--u));height:calc(76px*var(--u));border-radius:20px;border:4px solid #0006;box-shadow:0 5px 0 #0007,inset 0 -10px 0 #0003,inset 0 8px 0 #fff3;color:#fff}
+.swatch:active{transform:translateY(3px);box-shadow:0 2px 0 #0007}
+.swatch.fitted{border-color:#3ddc84;box-shadow:0 0 0 3px #3ddc84,0 5px 0 #0007}
+.swatch.afford{border-color:#ffc53d;animation:tilepulse 1.2s infinite}
+.swatch.locked::before{content:"";position:absolute;inset:0;border-radius:16px;background:#0008}
+.swatch .cost{position:absolute;right:3px;bottom:2px;display:flex;align-items:center;gap:1px;font-weight:900;font-size:calc(17px*var(--u));color:#ffc53d;background:#000b;border-radius:8px;padding:0 4px}
+.swatch .check{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:calc(34px*var(--u));font-weight:900;color:#fff;text-shadow:0 0 4px #000,0 0 8px #000}
+.swatch .lock{position:absolute;top:4px;left:6px;font-size:calc(18px*var(--u))}
+.swatch .flag{position:absolute;top:2px;right:4px;font-size:calc(18px*var(--u))}
+.goalchip .gi .dab{display:block;width:100%;height:100%;border-radius:12px;border:3px solid #fff}
 @media (orientation:landscape){
+  .sheet.paint{height:auto}
+  .swatches{display:grid;grid-template-columns:repeat(6,1fr);overflow:visible}
+  .swatch{width:auto;height:auto;aspect-ratio:1}
   .sheet{left:auto;top:calc(80px*var(--u) + env(safe-area-inset-top));width:46%;height:auto}
   .sheettiles{grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr 1fr}
   .mod-tile.legend{grid-column:span 2}

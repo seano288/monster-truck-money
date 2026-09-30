@@ -1,10 +1,13 @@
 // Save migrations are pure: raw JSON in, a current Save out. Anything that isn't a save starts fresh,
 // and a save's missing or broken fields fall back to their fresh values.
-import { ALL_BUYABLES, ALL_MODS, BODY_IDS, bodyOf, defaultFit, isBodyItem, isDoorNumber, isLegendary, isStarter, SLOTS, STARTER_BODIES, type BodyId, type Buyable, type Fit, type ModId, type Rung } from '../garage/catalog';
+import {
+  ALL_BUYABLES, ALL_MODS, BODY_IDS, bodyOf, BOUGHT_COLOURS, colourOf, defaultFit, isBodyItem, isColourItem, isDoorNumber, isLegendary, isStarter, SLOTS, STARTER_BODIES,
+  type BodyId, type BoughtColour, type Buyable, type Fit, type ModId, type Rung,
+} from '../garage/catalog';
 import { MODE_IDS, type Level, type ModeId } from '../modes/ids';
 import { backfill, dayOf, STEP_IDS, type Earned } from '../trophies/trophies';
 
-export const SAVE_VERSION = 3;
+export const SAVE_VERSION = 4;
 
 /** One problem's result in a mode's 10-problem window. */
 export type Outcome = 'clean' | 'helped' | 'missed';
@@ -28,11 +31,13 @@ export interface Save {
   body: BodyId | null;
   /** The starter Bodies and the ones he bought with Bolts. */
   ownedBodies: BodyId[];
-  /** The Mods fitted on each Body, and the number on its door. */
+  /** The Mods fitted on each Body, the number on its door and its Colour. */
   fitted: Record<BodyId, Fit>;
   /** Unlocked Mods, shared across Bodies. */
   unlocked: ModId[];
-  /** The locked Mod or Body he chose to save toward; null means the cheapest one. */
+  /** The Colours he bought, shared across Bodies. Red is always his. */
+  colours: BoughtColour[];
+  /** The locked Mod, Body or Colour he chose to save toward; null means the cheapest one. */
   goal: Buyable | null;
   modes: Record<ModeId, ModeSave>;
   lastMode: ModeId;
@@ -59,6 +64,7 @@ export const freshSave = (): Save => ({
   ownedBodies: [...STARTER_BODIES],
   fitted: freshFitted(),
   unlocked: [],
+  colours: [],
   goal: null,
   modes: Object.fromEntries(MODE_IDS.map(id => [id, freshMode(id)])) as Record<ModeId, ModeSave>,
   lastMode: 'learn',
@@ -77,6 +83,8 @@ const MIGRATIONS: Record<number, (old: Raw) => Raw> = {
   1: old => ({ ...old, version: 2, ownedBodies: [...STARTER_BODIES] }),
   // Trophies: the ones the Levels and stars already prove are backfilled once the modes are read, below
   2: old => ({ ...old, version: 3 }),
+  // Colours: none bought, so every Body reads as Red, below
+  3: old => ({ ...old, version: 4 }),
 };
 
 const isRecord = (x: unknown): x is Raw => typeof x === 'object' && x !== null && !Array.isArray(x);
@@ -84,7 +92,7 @@ const count = (x: unknown) => (typeof x === 'number' && Number.isInteger(x) && x
 const bool = (x: unknown, fallback: boolean) => (typeof x === 'boolean' ? x : fallback);
 const oneOf = <T extends string, F>(xs: readonly T[], x: unknown, fallback: F): T | F => (xs.includes(x as T) ? (x as T) : fallback);
 
-function readFit(raw: unknown, unlocked: readonly ModId[]): Fit {
+function readFit(raw: unknown, unlocked: readonly ModId[], colours: readonly BoughtColour[]): Fit {
   const f = defaultFit();
   if (!isRecord(raw)) return f;
   for (const { id } of SLOTS) {
@@ -92,6 +100,7 @@ function readFit(raw: unknown, unlocked: readonly ModId[]): Fit {
     if (r === 0 || ((r === 1 || r === 2 || r === 3 || r === 4) && unlocked.includes(`${id}:${r}`))) f[id] = r as Rung;
   }
   if (isDoorNumber(raw.doorNumber)) f.doorNumber = raw.doorNumber; // a save from before the Door Number reads as 1
+  if (colours.includes(raw.colour as BoughtColour)) f.colour = raw.colour as BoughtColour;
   return f;
 }
 
@@ -125,6 +134,7 @@ export function migrate(raw: unknown, today = dayOf(new Date())): Save {
   }
   const modes = isRecord(data.modes) ? data.modes : {};
   const unlocked = Array.isArray(data.unlocked) ? [...new Set(data.unlocked.filter((m): m is ModId => ALL_MODS.includes(m as ModId)))] : [];
+  const colours = Array.isArray(data.colours) ? [...new Set(data.colours.filter((c): c is BoughtColour => BOUGHT_COLOURS.includes(c as BoughtColour)))] : [];
   const fitted = isRecord(data.fitted) ? data.fitted : {};
   const bought = Array.isArray(data.ownedBodies) ? data.ownedBodies.filter((b): b is BodyId => BODY_IDS.includes(b as BodyId)) : [];
   const ownedBodies = BODY_IDS.filter(b => isStarter(b) || bought.includes(b));
@@ -132,14 +142,15 @@ export function migrate(raw: unknown, today = dayOf(new Date())): Save {
   const goal = oneOf(ALL_BUYABLES, data.goal, null);
   const modeSaves = Object.fromEntries(MODE_IDS.map(id => [id, readMode(id, modes[id])])) as Record<ModeId, ModeSave>;
   const trophies = raw.version < 3 ? { ...backfill(modeSaves, today), ...readTrophies(data.trophies) } : readTrophies(data.trophies);
-  const goalLocked = goal && (isBodyItem(goal) ? !ownedBodies.includes(bodyOf(goal)) : !unlocked.includes(goal) && !isLegendary(goal));
+  const goalLocked = goal && (isBodyItem(goal) ? !ownedBodies.includes(bodyOf(goal)) : isColourItem(goal) ? !colours.includes(colourOf(goal)) : !unlocked.includes(goal) && !isLegendary(goal));
   return {
     version: SAVE_VERSION,
     bolts: count(data.bolts),
     body: body && !ownedBodies.includes(body) ? 'pickup' : body,
     ownedBodies,
-    fitted: Object.fromEntries(BODY_IDS.map(b => [b, readFit(fitted[b], unlocked)])) as Record<BodyId, Fit>,
+    fitted: Object.fromEntries(BODY_IDS.map(b => [b, readFit(fitted[b], unlocked, colours)])) as Record<BodyId, Fit>,
     unlocked,
+    colours,
     goal: goalLocked ? goal : null,
     modes: modeSaves,
     lastMode: oneOf(MODE_IDS, data.lastMode, 'learn'),

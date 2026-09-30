@@ -7,7 +7,7 @@
 // the right way round on both.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
-import type { BodyId, Fit, Rung, SlotId } from '../catalog';
+import { colourById, type BodyId, type Fit, type Rung, type SlotId } from '../catalog';
 import { Exhaust, type Tip } from './exhaust';
 import { BODIES, LIFT, parsePath, TIRE_R, TIRE_W, toX, toY, TREAD, U, type BodyShape } from './bodies';
 import { BOLT, BOLTS, decalShapes, FLAME1, FLAME2, numberBox, numberSpot, SKULL, WING, type NumberSpot } from './sidePaint';
@@ -605,9 +605,10 @@ function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, 
   const c = cv.getContext('2d')!, CW = cv.width, CH = cv.height, dx = bb.max.x - bb.min.x, dy = bb.max.y - bb.min.y;
   c.setTransform(CW / (U * dx), 0, 0, CH / (U * dy), (-2 - bb.min.x) * CW / dx, CH + (bb.min.y * CH) / dy);
   let fill: string | CanvasGradient;
-  if (f.paint === 0) fill = '#8d96a3';
+  const colour = colourById(f.colour); // Plain is the Colour, and Fire Fade burns back into its deep shade
+  if (f.paint === 0) fill = colour.hex;
   else if (f.paint === 1) fill = '#1e7bff';
-  else if (f.paint === 2) { fill = c.createLinearGradient(B.front, 0, B.back, 0); fill.addColorStop(0, '#ffe14d'); fill.addColorStop(0.45, '#ff6a00'); fill.addColorStop(1, '#a80000'); }
+  else if (f.paint === 2) { fill = c.createLinearGradient(B.front, 0, B.back, 0); fill.addColorStop(0, '#ffe14d'); fill.addColorStop(0.45, '#ff6a00'); fill.addColorStop(1, colour.deep); }
   else if (f.paint === 4) { fill = c.createLinearGradient(0, -130, 0, 0); fill.addColorStop(0, '#fff1a8'); fill.addColorStop(0.45, '#e0a800'); fill.addColorStop(1, '#8a6100'); }
   else {
     const off = (t * 0.08) % 200, cols = ['#ff3b3b', '#ffb800', '#f4ff5a', '#3dff8b', '#3dc8ff', '#c04dff'];

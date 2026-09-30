@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_MODS, bodyItem, isLegendary } from './catalog';
+import { ALL_MODS, BODY_IDS, bodyItem, BOUGHT_COLOURS, colourItem, COLOURS, isLegendary } from './catalog';
 import { affordable, boltsNeeded, builtEverything, goalOf, nextLegendary, priceOf, unlock, waitingOn, type Wallet } from './economy';
 
-const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], ownedBodies: ['pickup', 'bigfoot', 'dragster'], goal: null, ...over });
+const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], ownedBodies: ['pickup', 'bigfoot', 'dragster'], colours: [], goal: null, ...over });
 
 describe('prices', () => {
   it('costs 5, 15 and 30 Bolts by Rung', () => {
@@ -149,10 +149,10 @@ describe('the Goal', () => {
 
   it('is gone once he has built everything, Legendaries and Bodies too', () => {
     const bodies = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep', 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const;
-    expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: bodies }))).toBeNull();
+    expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: bodies, colours: BOUGHT_COLOURS }))).toBeNull();
     expect(builtEverything(wallet({ unlocked: allBoltMods, ownedBodies: bodies }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: [...ALL_MODS] }))).toBe(false);
-    expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies }))).toBe(true);
+    expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies, colours: BOUGHT_COLOURS }))).toBe(true);
     expect(builtEverything(wallet({ unlocked: ALL_MODS.filter(m => !m.startsWith('engine:')), ownedBodies: bodies }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: ALL_MODS.filter(m => m !== 'grille:4'), ownedBodies: bodies }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: ALL_MODS.filter(m => m !== 'exhaust:4'), ownedBodies: bodies }))).toBe(false);
@@ -171,9 +171,9 @@ describe('the Goal', () => {
 
 describe('affordable', () => {
   it('lists the locked Mods and Bodies he has enough Bolts for, never a Legendary', () => {
-    expect(affordable(wallet({ bolts: 15, unlocked: ['tires:1'] }))).toEqual(['tires:2', 'paint:1', 'paint:2', 'decals:1', 'decals:2', 'lights:1', 'lights:2', 'horn:1', 'horn:2', 'engine:1', 'engine:2', 'grille:1', 'grille:2', 'exhaust:1', 'exhaust:2', 'topper:1', 'topper:2', 'number:1', 'number:2']);
-    expect(affordable(wallet({ bolts: 4 }))).toEqual([]);
-    expect(affordable(wallet({ bolts: 50, unlocked: ALL_MODS.filter(m => !isLegendary(m)) }))).toEqual(['body:firetruck']);
+    expect(affordable(wallet({ bolts: 15, unlocked: ['tires:1'] }))).toEqual(['tires:2', 'paint:1', 'paint:2', 'decals:1', 'decals:2', 'lights:1', 'lights:2', 'horn:1', 'horn:2', 'engine:1', 'engine:2', 'grille:1', 'grille:2', 'exhaust:1', 'exhaust:2', 'topper:1', 'topper:2', 'number:1', 'number:2', ...BOUGHT_COLOURS.map(colourItem)]);
+    expect(affordable(wallet({ bolts: 2 }))).toEqual([]);
+    expect(affordable(wallet({ bolts: 50, unlocked: ALL_MODS.filter(m => !isLegendary(m)), colours: BOUGHT_COLOURS }))).toEqual(['body:firetruck']);
   });
 });
 
@@ -186,5 +186,53 @@ describe('the next Legendary', () => {
     expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'grille:4', 'paint:4', 'decals:4'] }))).toBe('exhaust');
     expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary).filter(m => m !== 'topper:4' && m !== 'horn:4') }))).toBe('topper');
     expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary) }))).toBeNull();
+  });
+});
+
+describe('Colours', () => {
+  const BOLTS = { kind: 'bolts' } as const;
+  const everything = { unlocked: [...ALL_MODS], ownedBodies: BODY_IDS };
+
+  it('has 12, and Red is free', () => {
+    expect(COLOURS.map(c => c.name)).toEqual(['Red', 'Orange', 'Yellow', 'Lime', 'Green', 'Teal', 'Sky Blue', 'Navy', 'Purple', 'Pink', 'Black', 'White']);
+    expect(BOUGHT_COLOURS).not.toContain('red');
+    expect(BOUGHT_COLOURS).toHaveLength(11);
+  });
+
+  it('costs 3 Bolts each, 33 in all', () => {
+    expect(priceOf(colourItem('lime'))).toEqual({ bolts: 3 });
+    expect(BOUGHT_COLOURS.reduce((n, c) => n + priceOf(colourItem(c)).bolts!, 0)).toBe(33);
+  });
+
+  it('is bought with Bolts through unlock, once', () => {
+    const w = unlock(wallet({ bolts: 5, goal: 'colour:teal' }), 'colour:teal', BOLTS);
+    expect(w.bolts).toBe(2);
+    expect(w.colours).toEqual(['teal']);
+    expect(w.unlocked).toEqual([]);
+    expect(w.goal).toBeNull();
+    expect(() => unlock(w, 'colour:teal', BOLTS)).toThrow();
+    expect(() => unlock(wallet({ bolts: 2 }), 'colour:pink', BOLTS)).toThrow();
+    expect(() => unlock(wallet({ bolts: 9 }), 'colour:pink', { kind: 'cash', cents: 3 })).toThrow();
+  });
+
+  it('is skipped by the Goal unless he chose one', () => {
+    expect(goalOf(wallet())).toBe('tires:1');
+    expect(goalOf(wallet({ goal: 'colour:navy' }))).toBe('colour:navy');
+    expect(goalOf(wallet({ goal: 'colour:navy', colours: ['navy'] }))).toBe('tires:1');
+  });
+
+  it('is the Goal once nothing else bought with Bolts is left', () => {
+    expect(goalOf(wallet({ ...everything, colours: BOUGHT_COLOURS.filter(c => c !== 'pink' && c !== 'black') }))).toBe('colour:pink');
+    expect(goalOf(wallet({ ...everything, colours: BOUGHT_COLOURS }))).toBeNull();
+  });
+
+  it('counts as something he can afford', () => {
+    expect(affordable(wallet({ bolts: 3 }))).toEqual(BOUGHT_COLOURS.map(colourItem));
+  });
+
+  it('counts toward building everything', () => {
+    expect(builtEverything(wallet({ ...everything }))).toBe(false);
+    expect(builtEverything(wallet({ ...everything, colours: BOUGHT_COLOURS.filter(c => c !== 'white') }))).toBe(false);
+    expect(builtEverything(wallet({ ...everything, colours: BOUGHT_COLOURS }))).toBe(true);
   });
 });

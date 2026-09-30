@@ -1,10 +1,10 @@
-// The Goal bar: the Mod or Body he's saving toward and how close he is. Tapping it says so. Once everything
+// The Goal bar: the Mod, Body or Colour he's saving toward and how close he is. Tapping it says so. Once everything
 // bought with Bolts is his, it shows the next Legendary and its price in money.
 import { game } from '../game/store';
 import { fmt } from '../money/money';
 import { say } from '../voice/say';
 import { BodyArt } from './BodyArt';
-import { bodyOf, isBodyItem, LEGENDARY, parseMod } from './catalog';
+import { bodyOf, colourById, colourOf, isBodyItem, isColourItem, LEGENDARY, parseMod } from './catalog';
 import { CASH_PRICES, priceOf } from './economy';
 import { goal, goalLines, nextLegendary } from './garage';
 import { PartIcon } from './icons';
@@ -24,7 +24,9 @@ export function GoalBar() {
   const cost = priceOf(g).bolts!;
   return (
     <button class={`goalchip ${bolts >= cost ? 'ready' : ''}`} aria-label="Goal" onClick={tap}>
-      <span class={`gi ${isBodyItem(g) ? 'body' : ''}`}>{isBodyItem(g) ? <BodyArt body={bodyOf(g)} color="#ffd23f" /> : <PartIcon {...parseMod(g)} />}</span>
+      <span class={`gi ${isBodyItem(g) ? 'body' : ''}`}>
+        {isBodyItem(g) ? <BodyArt body={bodyOf(g)} color="#ffd23f" /> : isColourItem(g) ? <i class="dab" style={{ background: colourById(colourOf(g)).hex }} /> : <PartIcon {...parseMod(g)} />}
+      </span>
       <span class="track"><i style={{ width: `${Math.min(100, (bolts / cost) * 100)}%` }} /></span>
       <span class="num">{Math.min(bolts, cost)}/{cost}</span>
     </button>

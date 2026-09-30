@@ -4,6 +4,7 @@
 // the Body he's driving in view. 📸 Show Off puts the Truck on stage, and 🏆 opens the Trophy Shelf. Once a Door
 // Number style is fitted, its sheet has a button that swaps the Mods for two wheels to pick the number with. Its
 // hotspot steps away while the sheet is open, and every hotspot does while he picks, so none covers the number.
+// The Paint sheet has a row of Colour swatches under its Mods.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { ENGINES, HORNS, sClink, sNope } from '../audio/sfx';
@@ -16,13 +17,13 @@ import { Bolt, BoltPile, IconButton } from '../ui/bits';
 import { numberLine } from '../voice/phrases';
 import { say } from '../voice/say';
 import { BodyArt } from './BodyArt';
-import { bodyItem, BODY_IDS, BODY_NAMES, isStarter, LEGENDARY, modId, modName, RUNGS, SLOTS, slotById, TOP, type BodyId, type Rung, type SlotId } from './catalog';
+import { bodyItem, BODY_IDS, BODY_NAMES, colourById, colourItem, COLOURS, FREE_COLOUR, isStarter, LEGENDARY, modId, modName, RUNGS, SLOTS, slotById, TOP, type BodyId, type BoughtColour, type ColourId, type Rung, type SlotId } from './catalog';
 import { Checkout } from './Checkout';
 import { digits, turnWheel, type Wheel } from './doorNumber';
 import { CASH_PRICES, PRICES } from './economy';
 import {
-  buyLegendary, canAfford, canAffordBody, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, owns, setDoorNumber, slotHasAffordable,
-  stepBody, tapBody, tapMod, waitingFor, waitLines,
+  buyLegendary, canAfford, canAffordBody, canAffordColour, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, owns, ownsColour, setDoorNumber, slotHasAffordable,
+  stepBody, tapBody, tapColour, tapMod, waitingFor, waitLines,
 } from './garage';
 import { GoalBar } from './GoalBar';
 import { PartIcon } from './icons';
@@ -112,6 +113,15 @@ export function GarageScreen() {
     }
   }
 
+  function tapSwatch(c: ColourId) {
+    const result = tapColour(c), name = colourById(c).name;
+    if (result === 'fitted') { sClink(); void say(name); return; }
+    const item = colourItem(c as BoughtColour);
+    if (result === 'unlocked') { if (stage) block(celebrateUnlock(stage, stageEl.current!, 'paint', 1, currentFit(), gotLine(item))); return; }
+    nope(item);
+    void say(...needLines(item));
+  }
+
   function paid(slot: SlotId, cents: number) {
     buyLegendary(slot, cents);
     setCheckout(null);
@@ -176,7 +186,7 @@ export function GarageScreen() {
         )}
       </div>
       {sheet && !showing && (
-        <div class="sheet">
+        <div class={`sheet ${sheet === 'paint' ? 'paint' : ''}`}>
           <div class="sheethead">
             <span>{slotById(sheet).icon}</span>{slotById(sheet).name}
             {canPick && (picker
@@ -223,6 +233,22 @@ export function GarageScreen() {
               );
             })}
           </div>}
+          {sheet === 'paint' && (
+            <div class="swatches">
+              {COLOURS.map(c => {
+                const mine = ownsColour(c.id), item = c.id === FREE_COLOUR ? null : colourItem(c.id);
+                const cls = f.colour === c.id ? 'fitted' : mine ? 'owned' : canAffordColour(c.id) ? 'afford' : 'locked';
+                return (
+                  <button key={c.id} class={`swatch ${cls} ${item && wiggle === item ? 'wiggle' : ''}`} style={{ background: c.hex }} aria-label={c.name} onClick={() => tapSwatch(c.id)}>
+                    {!mine && <span class="cost"><Bolt size={16} />{PRICES.colour}</span>}
+                    {cls === 'fitted' && <span class="check">✓</span>}
+                    {cls === 'locked' && <span class="lock">🔒</span>}
+                    {item && goal() === item && <span class="flag">🎯</span>}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
       {shelf && <TrophyShelf onClose={() => setShelf(false)} />}

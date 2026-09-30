@@ -1,18 +1,21 @@
-// Garage actions on the saved game: choosing and buying Bodies, fitting and unlocking Mods, and the Goal.
+// Garage actions on the saved game: choosing and buying Bodies, fitting and unlocking Mods and Colours, and the Goal.
 import { game, update } from '../game/store';
 import { needBolts, type Phrase } from '../voice/phrases';
 import type { Item } from '../voice/say';
 import {
-  bodyItem, BODY_IDS, buyableName, defaultFit, isBodyItem, isLegendary, isStarter, LEGENDARY, modId, modName, parseMod,
-  BOLT_RUNGS, type BodyId, type Buyable, type BuyRung, type Fit, type ModId, type Rung, type SlotId,
+  bodyItem, BODY_IDS, BOUGHT_COLOURS, buyableName, colourById, colourItem, defaultFit, FREE_COLOUR, isLegendary, isModItem, isStarter, LEGENDARY, modId, modName, paintShowsColour, parseMod,
+  BOLT_RUNGS, type BodyId, type BoughtColour, type Buyable, type BuyRung, type ColourId, type Fit, type ModId, type Rung, type SlotId,
 } from './catalog';
 import { affordable, boltsNeeded, CASH_PRICES, goalOf, isLocked, nextLegendary as nextLegendaryOf, priceOf, unlock, waitingOn } from './economy';
 
 export const currentBody = (): BodyId => game.value.body ?? 'pickup';
 export const currentFit = (): Fit => game.value.fitted[currentBody()] ?? defaultFit();
 
-/** His Truck's paint as one flat colour, for the 2D Truck on Home and the celebration road. */
-export const truckColor = () => ['#8d96a3', '#1e7bff', '#ff6a00', '#c04dff', '#d4a017'][currentFit().paint]!;
+/** His Truck's paint as one flat colour, for the 2D Truck on Home and the celebration road: Plain shows his Colour. */
+export function truckColor() {
+  const f = currentFit();
+  return f.paint === 0 ? colourById(f.colour).hex : ['', '#1e7bff', '#ff6a00', '#c04dff', '#d4a017'][f.paint]!;
+}
 
 export const owns = (b: BodyId) => game.value.ownedBodies.includes(b);
 
@@ -42,7 +45,8 @@ export const isUnlocked = (slot: SlotId, rung: Rung) => rung === 0 || game.value
 const canBuyWithBolts = (x: Buyable) => isLocked(game.value, x) && priceOf(x).bolts !== undefined && boltsNeeded(game.value, x) === 0;
 export const canAfford = (slot: SlotId, rung: Rung) => rung !== 0 && canBuyWithBolts(modId(slot, rung));
 export const canAffordBody = (b: BodyId) => !isStarter(b) && canBuyWithBolts(bodyItem(b));
-export const slotHasAffordable = (slot: SlotId) => BOLT_RUNGS.some(r => canAfford(slot, r));
+/** The Paint hotspot also rings for a Colour he can buy. */
+export const slotHasAffordable = (slot: SlotId) => BOLT_RUNGS.some(r => canAfford(slot, r)) || (slot === 'paint' && BOUGHT_COLOURS.some(canAffordColour));
 /** The top-Rung Mod this Legendary is still waiting on. */
 export const waitingFor = (slot: SlotId) => waitingOn(game.value, modId(slot, LEGENDARY));
 export const affordableCount = () => affordable(game.value).length;
@@ -64,6 +68,28 @@ export function tapMod(slot: SlotId, rung: Rung): TapResult {
     return 'unlocked';
   }
   update(s => ({ ...s, goal: mod }));
+  return 'goal';
+}
+
+export const ownsColour = (c: ColourId) => c === FREE_COLOUR || game.value.colours.includes(c);
+export const canAffordColour = (c: ColourId) => c !== FREE_COLOUR && canBuyWithBolts(colourItem(c));
+
+/** Fit a Colour on this Body. If the fitted Paint covers it, the Paint goes back to Plain so he sees it. */
+function fitColour(c: ColourId) {
+  const body = currentBody(), paint = paintShowsColour(currentFit().paint) ? currentFit().paint : 0;
+  update(s => ({ ...s, fitted: { ...s.fitted, [body]: { ...s.fitted[body], colour: c, paint } } }));
+}
+
+/** Tapping a Colour swatch: an owned one is fitted; an affordable one is bought and fitted; a locked one becomes the Goal. */
+export function tapColour(c: ColourId): Exclude<TapResult, 'checkout' | 'waiting'> {
+  if (ownsColour(c)) { fitColour(c); return 'fitted'; }
+  const item = colourItem(c as BoughtColour);
+  if (canBuyWithBolts(item)) {
+    update(s => unlock(s, item, { kind: 'bolts' }));
+    fitColour(c);
+    return 'unlocked';
+  }
+  update(s => ({ ...s, goal: item }));
   return 'goal';
 }
 
@@ -92,7 +118,7 @@ export const needLines = (x: Buyable): Phrase[] => [buyableName(x), needBolts(bo
 
 /** "You got Chunky!", or "You bought Gold Flake!" for a Legendary. */
 export function gotLine(x: Buyable): Phrase {
-  if (!isBodyItem(x) && isLegendary(x)) return `You bought ${buyableName(x)}!` as Phrase;
+  if (isModItem(x) && isLegendary(x)) return `You bought ${buyableName(x)}!` as Phrase;
   return `You got ${buyableName(x)}!` as Phrase;
 }
 

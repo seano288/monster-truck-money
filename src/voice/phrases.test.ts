@@ -12,3 +12,11 @@ describe('the Door Number lines', () => {
     expect(PHRASES).not.toContain('100!');
   });
 });
+
+describe('the Colour lines', () => {
+  it('names every Colour, and says when he gets one or can get one', () => {
+    for (const c of ['Red', 'Sky Blue', 'White']) expect(PHRASES).toContain(c);
+    for (const c of ['Orange', 'Sky Blue', 'White']) expect(PHRASES).toEqual(expect.arrayContaining([`You got ${c}!`, `You can get ${c}!`]));
+    expect(PHRASES).not.toContain('You got Red!');
+  });
+});

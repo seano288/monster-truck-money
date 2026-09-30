@@ -9,7 +9,7 @@ _Avoid_: Pay the Garage (it clashes with the Garage, which uses Bolts, not money
 
 **Round**: A short run of problems in one Game Mode that ends in a reward. A problem he missed comes back once, later in the Round.
 
-**Bolt**: What the player earns in Rounds, one for each answer right on the first try without help plus one for finishing, and spends to unlock Mods and buy Bodies. It is deliberately *not* money, so spending it never asks the player to count cash. A Bolt never buys a Legendary Mod.
+**Bolt**: What the player earns in Rounds, one for each answer right on the first try without help plus one for finishing, and spends to unlock Mods and Colours and buy Bodies. It is deliberately *not* money, so spending it never asks the player to count cash. A Bolt never buys a Legendary Mod.
 _Avoid_: Reward Token, coin, star, point
 
 **Truck**: The player's one monster truck: a Body with Mods fitted to it. A player has one Truck at a time.
@@ -27,7 +27,10 @@ _Avoid_: Tier, level (Level means how hard a Game Mode is)
 
 **Door Number**: The racing number on the Truck's door, 0 to 99, which the player picks himself with two wheels (tens and ones) while it is read aloud. Each Body keeps its own number, and changing it is always free. It is not a Mod: the Door Number Slot's Mods are only its style (Plain, Outlined, Flaming, Glowing Gold), and with No Number fitted it isn't shown.
 
-**Goal**: The one locked Mod or locked Body the player is saving Bolts toward, shown as a progress bar while they play. It is the cheapest one unless the player taps another locked Mod or Body to choose it. A Legendary is never the Goal, because it is bought with money.
+**Colour**: The base coat of one Body, such as Red, Teal or Sky Blue. There are twelve. Red is free and the rest cost 3 Bolts each, bought once and then used on any Body. Each Body keeps its own Colour. It is not a Mod and not a Slot: it sits alongside the Paint Slot and is picked from a row of swatches in the Paint sheet. It shows on Plain and Fire Fade (the fire fades into it); the other Paint Mods cover it.
+_Avoid_: paint (Paint is the Slot), color
+
+**Goal**: The one locked Mod, Body or Colour the player is saving Bolts toward, shown as a progress bar while they play. It is the cheapest Mod or Body unless the player taps another locked Mod, Body or Colour to choose it. A Colour becomes the Goal on its own only once nothing else bought with Bolts is left. A Legendary is never the Goal, because it is bought with money.
 
 **Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost (or money price, for a Legendary), and the Bodies owned and still to buy.
 
