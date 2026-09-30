@@ -5,6 +5,8 @@ import { sBigFanfare, sChime, sClink, sCrunch, sDrumroll, sEngine, sFanfare, sHo
 import { modeById } from '../modes/modes';
 import { eventLines, smallestFirst } from '../round/events';
 import type { Round, RoundEvent } from '../round/round';
+import { trophyOf } from '../trophies/trophies';
+import { cupColor, TrophyArt } from '../trophies/TrophyArt';
 import { Money } from '../ui/Money';
 import type { Phrase } from '../voice/phrases';
 import { earnedBolts } from '../voice/phrases';
@@ -117,6 +119,22 @@ async function star(st: ShowStage, e: RoundEvent) {
   big.remove();
 }
 
+/** A new trophy (+~2.2 s): it drops in from the top with a bounce and a chime, and the Truck hops for it. */
+async function trophy(st: ShowStage, e: Extract<RoundEvent, { kind: 'trophy' }>) {
+  const { trophy: t, earned } = trophyOf(e.step);
+  const cup = prop(st, 'right:10%;bottom:20px;z-index:1');
+  render(<TrophyArt color={cupColor(t, earned)} step={e.step} size={80} />, cup);
+  sWhoosh(0.4);
+  await animate(cup, [{ transform: 'translateY(-70vh)' }, { transform: 'translateY(0)', offset: 0.7 }, { transform: 'translateY(-24px)', offset: 0.85 }, { transform: 'translateY(0)' }], 800, 'ease-in');
+  if (!st.alive()) return;
+  sChime(); confetti(40);
+  speak(st, eventLines(e));
+  await animate(st.truck, [{ transform: 'translateY(0)' }, { transform: 'translateY(-40px)' }, { transform: 'translateY(0)' }], 450);
+  await sleep(950);
+  render(null, cup);
+  cup.remove();
+}
+
 /** Plays every moment of the Round, smallest first. Resolves when the last one is done. */
 export async function playRoundShow(st: ShowStage, r: Round, bolts: number) {
   await roundDone(st, bolts, r.earned);
@@ -125,6 +143,7 @@ export async function playRoundShow(st: ShowStage, r: Round, bolts: number) {
     await sleep(250);
     if (e.kind === 'levelUp') await levelUp(st, e);
     else if (e.kind === 'open') await modeOpens(st, e);
+    else if (e.kind === 'trophy') await trophy(st, e);
     else await star(st, e);
     st.truck.style.transform = '';
   }

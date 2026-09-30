@@ -30,3 +30,6 @@ _Avoid_: Tier, level (Level means how hard a Game Mode is)
 **Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost (or money price, for a Legendary), and the Bodies owned and still to buy.
 
 **Show Off**: The Garage's stage moment: the current Truck spins under a spotlight while the crowd cheers, and performs a move when tapped.
+
+**Trophy**: A reward earned by playing well: reaching a Level or a star, a streak of answers right on the first try, a perfect Round, or sticking with it (Rounds finished, days played). A Trophy is never bought and never lost. It isn't a Mod, it isn't bought with Bolts and it earns none. A counting Trophy upgrades in place, bronze to silver to gold and on, rather than taking a new spot. Trophies stand on the Trophy Shelf in the Garage, on three planks: Learning, Skill and Sticking with it. Earned ones shine and the rest are grey silhouettes.
+_Avoid_: badge, achievement, award

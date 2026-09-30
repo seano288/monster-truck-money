@@ -3,9 +3,10 @@
 import { BODY_NAMES, BOUGHT_BODIES, SLOTS, type BodyName, type BoughtBody, type ModName, type SlotName } from '../garage/catalog';
 import { PRICES } from '../garage/economy';
 import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
-import { MODE_NAMES, type ModeName } from '../modes/ids';
+import { MODE_IDS, MODE_NAMES, type ModeId, type ModeName } from '../modes/ids';
 import { SHOP_ITEMS, type ShopItem } from '../modes/pay/pay';
 import { MAX_BOLTS } from '../round/rules';
+import { DAYS, TROPHIES, type RoundsN, type StreakN, type TrophyStep } from '../trophies/trophies';
 import { allAmountPieces, type AmountPiece } from './amount';
 
 type Of<T extends readonly string[]> = T[number];
@@ -82,13 +83,46 @@ const garagePhrases = (): GaragePhrase[] => {
   ];
 };
 
+// ---------- Trophies ----------
+export type TrophyName = `${ModeName} Level ${2 | 3}` | `${ModeName} Star` | `${StreakN} in a Row` | 'Perfect Round' | `${RoundsN} Rounds` | `${typeof DAYS} Days`;
+/** Read aloud when he taps a trophy he hasn't earned yet. */
+type TrophyHint = `Reach Level ${2 | 3} in ${ModeName}!` | `Be a ${ModeName} star!` | `Get ${StreakN} right in a row on the first try!`
+  | 'Get every answer right on the first try in one Round!' | `Finish ${RoundsN} Rounds!` | `Play on ${typeof DAYS} different days!`;
+type TrophyPhrase = 'Trophies!' | TrophyName | TrophyHint | `You earned ${TrophyName}!`;
+const modeName = (m: ModeId) => MODE_NAMES[MODE_IDS.indexOf(m)]!;
+/** "10 in a Row" */
+export function trophyName(s: TrophyStep): TrophyName {
+  switch (s.kind) {
+    case 'level': return `${modeName(s.mode)} Level ${s.level}`;
+    case 'star': return `${modeName(s.mode)} Star`;
+    case 'streak': return `${s.n} in a Row`;
+    case 'perfect': return 'Perfect Round';
+    case 'rounds': return `${s.n} Rounds`;
+    case 'days': return `${s.n} Days`;
+  }
+}
+/** "Get 10 right in a row on the first try!" */
+export function trophyHint(s: TrophyStep): TrophyHint {
+  switch (s.kind) {
+    case 'level': return `Reach Level ${s.level} in ${modeName(s.mode)}!`;
+    case 'star': return `Be a ${modeName(s.mode)} star!`;
+    case 'streak': return `Get ${s.n} right in a row on the first try!`;
+    case 'perfect': return 'Get every answer right on the first try in one Round!';
+    case 'rounds': return `Finish ${s.n} Rounds!`;
+    case 'days': return `Play on ${s.n} different days!`;
+  }
+}
+/** "You earned 10 in a Row!" */
+export const earnedTrophy = (s: TrophyStep) => `You earned ${trophyName(s)}!` as const;
+const trophyPhrases = (): TrophyPhrase[] => ['Trophies!', ...TROPHIES.flatMap(t => t.steps).flatMap(s => [trophyName(s), trophyHint(s), earnedTrophy(s)])];
+
 // ---------- Show Off ----------
 const SHOW = ['Show time!'] as const;
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | EarnedPhrase | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | Of<typeof SHOW> | AmountPiece;
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | EarnedPhrase | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | Of<typeof SHOW> | TrophyPhrase | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
 export const PAY_PHRASES: readonly Phrase[] = [...buyPhrases(), 'It costs', 'Tap some money first!', 'Almost!', 'You need', 'more', 'Too much!', 'Take back', 'Tap a coin to hear its name.', 'Count more cash to open this!'];
 export const COUNT_PHRASES: readonly Phrase[] = ['How much money is this?', 'Not quite!', "Let's count together.", 'Tap a coin to hear its name.', 'Learn more coins to open this!'];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...earnedPhrases(), ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...SHOW, ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...earnedPhrases(), ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...SHOW, ...trophyPhrases(), ...allAmountPieces()])];

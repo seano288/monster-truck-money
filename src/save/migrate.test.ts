@@ -54,7 +54,7 @@ describe('migrate: the Garage', () => {
 describe('migrate: version 1 to 2', () => {
   it('gives an old save the 3 starter Bodies and keeps its fits', () => {
     const s = migrate({ version: 1, body: 'dragster', bolts: 40, unlocked: ['tires:3'], fitted: { dragster: { tires: 3 } } });
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(SAVE_VERSION);
     expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster']);
     expect(s.body).toBe('dragster');
     expect(s.bolts).toBe(40);
@@ -102,7 +102,7 @@ describe('migrate: the Engine Slot', () => {
   it('loads a save from before the Engine with its fits kept and the Engine on Putt-Putt', () => {
     const old = { version: 2, bolts: 9, unlocked: ['horn:3', 'horn:4'], fitted: { pickup: { tires: 0, paint: 0, decals: 0, lights: 0, horn: 4 } } };
     const s = migrate(old);
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(9);
     expect(s.unlocked).toEqual(['horn:3', 'horn:4']);
     expect(s.fitted.pickup).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 4, engine: 0 });
@@ -121,7 +121,7 @@ describe('migrate: the second batch of Bodies', () => {
       fitted: Object.fromEntries(['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'].map(b => [b, { tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0 }])),
     };
     const s = migrate(old);
-    expect(s.version).toBe(2);
+    expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(140);
     expect(s.body).toBe('jeep');
     expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'jeep']);
@@ -137,5 +137,40 @@ describe('migrate: the second batch of Bodies', () => {
     expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'racecar']);
     expect(s.body).toBe('racecar');
     expect(s.goal).toBe('body:tractor');
+  });
+});
+
+describe('migrate: version 2 to 3, the Trophy Shelf', () => {
+  const today = '2026-09-30';
+
+  it('starts the counters at nothing and keeps the rest of the save', () => {
+    const s = migrate({ version: 2, bolts: 30, ownedBodies: ['jeep'], body: 'jeep' }, today);
+    expect(s.version).toBe(3);
+    expect(s.bolts).toBe(30);
+    expect(s.body).toBe('jeep');
+    expect(s).toMatchObject({ roundsFinished: 0, bestStreak: 0, currentStreak: 0, daysPlayed: 0, lastDay: null });
+  });
+
+  it('backfills the trophies the old save already proves: Levels and stars reached', () => {
+    const s = migrate({ version: 2, modes: { learn: { level: 3, starred: true, opened: true }, count: { level: 2, opened: true } } }, today);
+    expect(s.trophies).toEqual({ 'learn:2': today, 'learn:3': today, 'learn:star': today, 'count:2': today });
+  });
+
+  it('backfills nothing for a new player', () => {
+    expect(migrate({ version: 2 }, today).trophies).toEqual({});
+  });
+
+  it('keeps earned trophies and counters, and drops unknown ones', () => {
+    const s = migrate({
+      version: 3, trophies: { 'streak:5': '2026-09-01', 'wings:9': '2026-09-01', perfect: 7 },
+      roundsFinished: 12, bestStreak: 6, currentStreak: 2, daysPlayed: 3, lastDay: '2026-09-02',
+    }, today);
+    expect(s.trophies).toEqual({ 'streak:5': '2026-09-01' });
+    expect(s).toMatchObject({ roundsFinished: 12, bestStreak: 6, currentStreak: 2, daysPlayed: 3, lastDay: '2026-09-02' });
+  });
+
+  it('does not backfill a current save again', () => {
+    const s = migrate({ version: 3, trophies: {}, modes: { learn: { level: 2, opened: true } } }, today);
+    expect(s.trophies).toEqual({});
   });
 });

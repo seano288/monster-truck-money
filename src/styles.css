@@ -243,3 +243,23 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .cprop{position:absolute;bottom:14px;font-size:calc(70px*var(--u));line-height:1;display:flex;gap:6px;align-items:flex-end}
 .reward .btns,.reward .icon-btn{transition:opacity .3s,filter .3s}
 .blocker{position:fixed;inset:0;z-index:45}
+
+/* ---------- Trophy Shelf ---------- */
+.icon-btn.trophies{background:#b8860b}
+.trophy{position:relative;flex:none}
+.trophy svg{width:100%;height:100%;display:block;overflow:visible}
+.trophy .ti{position:absolute;left:50%;top:14%;translate:-50% 0;font-size:calc(26px*var(--u));line-height:1}
+.trophy .tt{position:absolute;left:0;right:0;bottom:4%;text-align:center;font:900 calc(15px*var(--u)) Nunito,sans-serif;color:#000}
+.shelf{position:fixed;inset:0;z-index:35;background:radial-gradient(#3a2716,#140d07);color:#fff;display:flex;flex-direction:column;padding:calc(12px + env(safe-area-inset-top)) 16px calc(12px + env(safe-area-inset-bottom))}
+.shelfhead{display:flex;align-items:center;justify-content:center;position:relative;font-size:calc(46px*var(--u));min-height:calc(60px*var(--u))}
+.shelfhead .x{position:absolute;right:0;top:0;width:calc(60px*var(--u));height:calc(60px*var(--u));border-radius:50%;background:#000;color:#fff;font-size:calc(28px*var(--u))}
+.planks{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:space-evenly;gap:calc(10px*var(--u));overflow-y:auto}
+.plank{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-end;gap:calc(14px*var(--u));padding:0 8px 10px;border-bottom:calc(14px*var(--u)) solid #8b5a2b;box-shadow:0 8px 0 #3d2410;border-radius:4px}
+.shelf-trophy{display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:14px;padding:4px;transition:transform .2s}
+.shelf-trophy:active{transform:scale(.94)}
+.shelf-trophy:not(.earned) .ti,.shelf-trophy:not(.earned) .tt{filter:grayscale(1) brightness(.45)}
+.shelf-trophy.earned .trophy{animation:shine 2.4s ease-in-out infinite}
+@keyframes shine{50%{filter:drop-shadow(0 0 10px #ffd23f) brightness(1.15)}}
+.shelf-trophy .pips{display:flex;gap:4px}
+.shelf-trophy .pips i{width:calc(10px*var(--u));height:calc(10px*var(--u));border-radius:50%;background:#fff3}
+.shelf-trophy .pips i.on{background:var(--yellow)}

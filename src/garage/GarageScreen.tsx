@@ -1,7 +1,7 @@
 // The Garage: "Tap the truck". The 3D Truck fills the stage with a hotspot on each Slot's part; tapping one
 // swings the camera there and opens that Slot's sheet of 5 Mods (bottom sheet in portrait, side panel in landscape).
 // Along the bottom, the Body switcher shows every Body, the locked ones with their Bolt price; it scrolls, and keeps
-// the Body he's driving in view. 📸 Show Off puts the Truck on stage.
+// the Body he's driving in view. 📸 Show Off puts the Truck on stage, and 🏆 opens the Trophy Shelf.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { ENGINES, HORNS, sClink, sNope } from '../audio/sfx';
@@ -9,6 +9,7 @@ import { celebrateBody, celebrateUnlock } from '../celebrate/garageShow';
 import { game } from '../game/store';
 import { fmt } from '../money/money';
 import { startRound } from '../round/round';
+import { TrophyShelf } from '../trophies/TrophyShelf';
 import { Bolt, BoltPile, IconButton } from '../ui/bits';
 import { say } from '../voice/say';
 import { BodyArt } from './BodyArt';
@@ -32,6 +33,7 @@ export function GarageScreen() {
   const [sheet, setSheet] = useState<SlotId | null>(null);
   const [checkout, setCheckout] = useState<SlotId | null>(null);
   const [showing, setShowing] = useState(false);
+  const [shelf, setShelf] = useState(false);
   const [wiggle, setWiggle] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false); // only for the length of an unlock jump
   const body = currentBody(), f = currentFit();
@@ -126,6 +128,7 @@ export function GarageScreen() {
         <BoltPile count={game.value.bolts} />
         <GoalBar />
         <div class="spacer" />
+        <IconButton label="Trophies" class="trophies" onClick={() => { closeSheet(); setShelf(true); }}>🏆</IconButton>
         <IconButton label="Show Off" class="show" onClick={startShow}>📸</IconButton>
         <IconButton label="Home" onClick={() => (screen.value = 'home')}>🏠</IconButton>
         <IconButton label="Play" class="go" onClick={() => startRound(game.value.lastMode)}>▶</IconButton>
@@ -191,6 +194,7 @@ export function GarageScreen() {
           </div>
         </div>
       )}
+      {shelf && <TrophyShelf onClose={() => setShelf(false)} />}
       {checkout && <Checkout slot={checkout} onPaid={cents => paid(checkout, cents)} onClose={() => setCheckout(null)} />}
       {blocked && <div class="blocker" />}
     </div>

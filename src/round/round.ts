@@ -1,7 +1,7 @@
 // The Round: 5 correct answers in one Game Mode, then a Bolt for each one right on the first try and one for
 // finishing. A miss holds taps while it's explained, help teaches the answer after two, and a missed problem comes
-// back later. Each problem's result feeds the mode's Mastery window, and any Level up, opened mode or star is
-// celebrated at the end.
+// back later. Each problem's result feeds the mode's Mastery window and the first-try streak, and any Level up,
+// opened mode, star or new trophy is celebrated at the end.
 import { signal } from '@preact/signals';
 import { sBad, sGood } from '../audio/sfx';
 import { screen } from '../app/nav';
@@ -13,12 +13,13 @@ import type { Level, ModeId } from '../modes/ids';
 import { modeById, MODES } from '../modes/modes';
 import { recordOutcome, struggling } from '../modes/progress';
 import type { Outcome } from '../save/migrate';
+import { countAnswer, dayOf, finishRound, type TrophyStep } from '../trophies/trophies';
 import { toast } from '../ui/toast';
 import { CHEERS } from '../voice/phrases';
 import { hush } from '../voice/say';
 import { boltsFor, ROUND_LENGTH, takeAgain, teachNow, THINK_MS, type Again } from './rules';
 
-export type RoundEvent = { kind: 'levelUp'; mode: ModeId; level: 2 | 3 } | { kind: 'open'; mode: ModeId } | { kind: 'star'; mode: ModeId };
+export type RoundEvent = { kind: 'levelUp'; mode: ModeId; level: 2 | 3 } | { kind: 'open'; mode: ModeId } | { kind: 'star'; mode: ModeId } | { kind: 'trophy'; step: TrophyStep };
 
 export interface Round {
   mode: ModeId;
@@ -98,7 +99,7 @@ function record(r: Round, outcome: Outcome): RoundEvent[] {
   update(s => {
     const modes = { ...s.modes, [r.mode]: mode };
     for (const o of opened) modes[o] = { ...modes[o], opened: true, fresh: true };
-    return { ...s, modes };
+    return countAnswer({ ...s, modes }, outcome);
   });
   return events;
 }
@@ -123,17 +124,25 @@ export function miss(explain: (teach: boolean) => Promise<unknown>) {
   if (!r || r.busy || r.thinking) return;
   const misses = r.misses + 1, key = r.key;
   set({ firstTry: false, misses, thinking: true });
+  update(s => countAnswer(s, 'missed')); // the streak breaks now, even if he leaves before answering
   sBad();
   void explain(teachNow(misses, isStruggling(r.mode))).then(() => later(THINK_MS, () => { if (round.value?.key === key) set({ thinking: false }); }));
 }
 
 export function helped() {
   set({ helped: true });
+  update(s => countAnswer(s, 'helped'));
 }
 
 function endRound() {
-  const before = affordableCount();
-  const earned = boltsFor(round.value!.results);
-  update(s => ({ ...s, bolts: s.bolts + earned }));
-  set({ ended: true, earned, canBuild: affordableCount() > before });
+  const r = round.value!, before = affordableCount();
+  const earned = boltsFor(r.results);
+  let trophies: TrophyStep[] = [];
+  update(s => {
+    const done = finishRound(s, r.results, dayOf(new Date()));
+    trophies = done.earned;
+    return { ...done.save, bolts: s.bolts + earned };
+  });
+  const events = [...r.events, ...trophies.map(step => ({ kind: 'trophy', step }) as const)];
+  set({ ended: true, earned, canBuild: affordableCount() > before, events });
 }
