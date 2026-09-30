@@ -1,4 +1,4 @@
-// The Garage's parts: twelve Bodies (three starters, nine bought with Bolts), eight Slots, and in each Slot a free
+// The Garage's parts: twelve Bodies (three starters, nine bought with Bolts), nine Slots, and in each Slot a free
 // default plus four Mods: Rungs 1-3 bought with Bolts and a Legendary Rung 4 bought with money.
 export const BODY_IDS = [
   'pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep', 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar',
@@ -25,6 +25,7 @@ export const SLOTS = [
   { id: 'engine', name: 'Engine', icon: '🔧', mods: ['Putt-Putt', 'Rumble', 'V8', 'Jet Turbine', 'Rocket'] },
   { id: 'grille', name: 'Grille', icon: '🦈', mods: ['Plain', 'Chrome Bars', 'Bull Bar', 'Shark Teeth', 'Dragon Jaw'] },
   { id: 'exhaust', name: 'Exhaust', icon: '💨', mods: ['Tailpipe', 'Twin Stacks', 'Smoke Stacks', 'Flame Stacks', 'Rainbow Blast'] },
+  { id: 'topper', name: 'Roof Topper', icon: '🚩', mods: ['None', 'Antenna Flag', 'Spoiler', 'Bull Horns', 'Siren'] },
 ] as const;
 export type Slot = (typeof SLOTS)[number];
 export type SlotId = Slot['id'];
@@ -63,4 +64,4 @@ export const buyableName = (x: Buyable): ModName | BodyName => {
 };
 
 export type Fit = Record<SlotId, Rung>;
-export const defaultFit = (): Fit => ({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0 });
+export const defaultFit = (): Fit => ({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });

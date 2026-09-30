@@ -107,6 +107,21 @@ function partSvg(slot: SlotId, r: Rung): string {
       }
       return s;
     }
+    case 'topper': { // a cab roof, with something fun on top
+      let s = '';
+      if (r === 1) { // a checkered flag on a tall whip
+        s += '<line x1="30" y1="62" x2="30" y2="8" stroke="#111" stroke-width="3"/><rect x="30" y="8" width="44" height="26" fill="#fff" stroke="#111" stroke-width="3"/>';
+        for (let i = 0; i < 4; i++) for (let j = 0; j < 2; j++) if ((i + j) % 2 === 0) s += `<rect x="${30 + i * 11}" y="${8 + j * 13}" width="11" height="13" fill="#111"/>`;
+      }
+      if (r === 2) s += '<rect x="30" y="38" width="6" height="22" fill="#1e2126"/><rect x="64" y="38" width="6" height="22" fill="#1e2126"/><path d="M10,40 L90,32 L90,42 L10,48Z" fill="#e63946" stroke="#111" stroke-width="3" stroke-linejoin="round"/>';
+      if (r === 3) s += '<g stroke="#111" stroke-width="3" stroke-linejoin="round"><path d="M50,58 C30,60 12,52 8,20 C20,40 34,46 50,48Z M50,58 C70,60 88,52 92,20 C80,40 66,46 50,48Z" fill="#fff4d0"/><path d="M8,20 L10,30 L15,34Z M92,20 L90,30 L85,34Z" fill="#111"/></g><ellipse cx="50" cy="56" rx="12" ry="7" fill="#1e2126"/>';
+      if (r === 4) { // a gold-based siren flashing red and blue
+        s += '<path d="M50,36 L14,14 L20,6Z" fill="#ff1a1a" opacity=".55"/><path d="M50,36 L86,14 L80,6Z" fill="#1a6bff" opacity=".55"/>';
+        s += '<path d="M34,54 L34,38 A16,16 0 0 1 66,38 L66,54Z" fill="#ff1a1a" stroke="#111" stroke-width="3"/><path d="M50,22 A16,16 0 0 1 66,38 L66,54 L50,54Z" fill="#1a6bff"/><path d="M34,54 L34,38 A16,16 0 0 1 66,38 L66,54Z" fill="none" stroke="#111" stroke-width="3"/>';
+        s += '<rect x="28" y="52" width="44" height="10" rx="3" fill="#ffc21a" stroke="#111" stroke-width="3"/>';
+      }
+      return s + '<path d="M14,90 L24,62 L76,62 L86,90Z" fill="#8d96a3" stroke="#111" stroke-width="4" stroke-linejoin="round"/>';
+    }
   }
 }
 

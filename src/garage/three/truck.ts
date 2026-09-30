@@ -2,7 +2,8 @@
 // a clear-coat, one canvas texture for Paint and Decals projected from the side, a tube chassis with 4-link
 // suspension and coil-overs, lathe-turned tires with tread that grows per Mod, beadlock rims, and per-Body extras.
 // The Legendaries (Rung 4) go a step past the top Rung: gold spiked paddle tires, flaked gold paint, a skull with
-// wings, spinning lasers, a roof-top train horn, a gold dragon jaw that chomps and gold stacks that blast a rainbow.
+// wings, spinning lasers, a roof-top train horn, a gold dragon jaw that chomps, gold stacks that blast a rainbow and a
+// spinning Siren.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
 import type { BodyId, Fit, SlotId } from '../catalog';
@@ -98,6 +99,10 @@ export interface TruckAnim {
   repaint: ((t: number) => void) | null;
   /** Dragon Jaw: the lower jaw swings on its hinge and the fire inside flickers. */
   jaw: { hinge: THREE.Object3D; fire: THREE.MeshStandardMaterial } | null;
+  /** Antenna Flag: the flag waves. */
+  wave: ((t: number) => void) | null;
+  /** Siren: the lamps spin round and flash red and blue. */
+  siren: { rotor: THREE.Object3D; lamps: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial]; light: THREE.PointLight } | null;
 }
 
 export interface BuiltTruck {
@@ -119,7 +124,7 @@ class Builder {
   readonly own: THREE.Material[] = [];
   readonly truck = new THREE.Group();
   readonly body = new THREE.Group();
-  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null, jaw: null };
+  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null, jaw: null, wave: null, siren: null };
 
   constructor(readonly bodyId: BodyId, readonly f: Fit) {
     this.B = BODIES[bodyId];
@@ -250,10 +255,10 @@ class Builder {
       body.add(this.box(0.03, 0.08, 0.2, tail, bw - 0.012, 0.28, s * W * 0.36)); // tail lights
       body.add(this.box(0.04, 0.03, 0.12, M.dark, toX(mx) - 0.04, toY(my) + 0.05, s * (ext + 0.05)), this.box(0.05, 0.12, 0.09, M.dark, toX(mx) - 0.04, toY(my) + 0.08, s * (ext + 0.13))); // mirrors
     }
-    if (bodyId !== 'dragster' && bodyId !== 'racecar') { // antenna
-      const ax = toX(B.roof[0]) + 0.06, ay = toY(B.roof[2]) + SH.bs;
-      body.add(this.cyl(0.006, 0.006, 0.6, M.dark, ax, ay + 0.3, W * 0.42));
-      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), M.dark); tip.position.set(ax, ay + 0.6, W * 0.42); body.add(tip);
+    if (bodyId !== 'dragster' && bodyId !== 'racecar' && this.f.topper !== 1) { // antenna; an Antenna Flag takes its place
+      const { x: ax, y: ay, z } = this.antennaAt();
+      body.add(this.cyl(0.006, 0.006, 0.6, M.dark, ax, ay + 0.3, z));
+      const tip = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), M.dark); tip.position.set(ax, ay + 0.6, z); body.add(tip);
     }
     if (bodyId === 'pickup') body.add(this.box(toX(150) - toX(60) - 0.1, 0.01, W * 0.84, M.liner, (toX(60) + toX(150)) / 2, 0.45 + SH.bs + 0.006, 0)); // bed liner
     if (bodyId === 'bigfoot') {
@@ -446,6 +451,68 @@ class Builder {
     });
   }
 
+  // --- Roof Topper Mods, on the back of the roof, behind any Roof Bar ---
+  /** Where the antenna (or an Antenna Flag) stands: at the back corner of the roof. */
+  antennaAt() { return { x: toX(this.B.roof[0]) + 0.06, y: toY(this.B.roof[2]) + SH.bs, z: this.W * 0.42 }; }
+  /** Where a Roof Topper sits: x, and the roof's top. */
+  topperAt() { return { x: toX(this.B.topper), y: toY(this.B.roof[2]) + SH.bs }; }
+  topper() {
+    const rung = this.f.topper;
+    if (!rung) return;
+    const { W, body } = this, { x, y } = this.topperAt();
+    if (rung === 1) { // Antenna Flag: a tall whip where the antenna is, flying a checkered flag that waves
+      const { x: ax, z } = this.antennaAt(), H = 0.95, fw = 0.36, fh = 0.22;
+      body.add(this.cyl(0.008, 0.012, H, M.dark, ax, y + H / 2, z, undefined, 8));
+      const geo = new THREE.PlaneGeometry(fw, fh, 8, 5).translate(-fw / 2, 0, 0).toNonIndexed(), pos = geo.attributes.position!, col: number[] = [];
+      for (let i = 0; i < pos.count; i += 3) { // each triangle takes the colour of its square
+        const cx = (pos.getX(i) + pos.getX(i + 1) + pos.getX(i + 2)) / 3, cy = (pos.getY(i) + pos.getY(i + 1) + pos.getY(i + 2)) / 3;
+        const k = (Math.floor((-cx / fw) * 8) + Math.floor(((cy + fh / 2) / fh) * 5)) % 2 ? 0.05 : 1;
+        for (let j = 0; j < 3; j++) col.push(k, k, k);
+      }
+      geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+      const flag = new THREE.Mesh(geo, this.mat(std(0xffffff, { vertexColors: true, roughness: 0.7, side: THREE.DoubleSide })));
+      flag.position.set(ax, y + H - fh / 2 - 0.02, z); body.add(flag);
+      const x0 = Float32Array.from({ length: pos.count }, (_, i) => pos.getX(i));
+      this.anim.wave = t => {
+        for (let i = 0; i < pos.count; i++) { const d = -x0[i]!; pos.setZ(i, Math.sin(d * 18 - t / 110) * 0.05 * (d / fw)); }
+        pos.needsUpdate = true; geo.computeVertexNormals();
+      };
+    }
+    if (rung === 2) { // Spoiler: a red wing on two struts across the back of the roof, with end plates
+      const wing = this.mat(std(0xe63946, { roughness: 0.25, metalness: 0.3 }));
+      for (const s of [-1, 1]) body.add(this.box(0.05, 0.2, 0.03, M.dark, x, y + 0.1, s * W * 0.3), this.box(0.3, 0.14, 0.02, M.dark, x - 0.02, y + 0.21, s * W * 0.47));
+      const w = this.box(0.26, 0.035, W * 0.93, wing, x - 0.02, y + 0.21, 0); w.rotation.z = -0.15; body.add(w);
+    }
+    if (rung === 3) { // Bull Horns: a big pair of longhorns on a plate, curving out and up to black tips
+      const ivory = this.mat(std(0xfff4d0, { roughness: 0.35 }));
+      body.add(this.box(0.22, 0.04, 0.3, M.dark, x, y + 0.02, 0));
+      const boss = new THREE.Mesh(new THREE.SphereGeometry(0.08, 16, 10), M.dark); boss.position.set(x, y + 0.05, 0); boss.scale.y = 0.6; body.add(boss);
+      for (const s of [-1, 1]) {
+        const c = new THREE.QuadraticBezierCurve3(new V3(x, y + 0.07, s * 0.06), new V3(x, y + 0.04, s * W * 0.42), new V3(x + 0.08, y + 0.42, s * W * 0.48)), N = 8;
+        const pts = c.getPoints(N), rad = (i: number) => 0.085 - (0.075 * i) / N;
+        for (let i = 0; i < N; i++) {
+          body.add(this.link(pts[i]!, pts[i + 1]!, 0, i === N - 1 ? M.dark : ivory, L => new THREE.CylinderGeometry(rad(i + 1), rad(i), L, 12)));
+          const j = new THREE.Mesh(new THREE.SphereGeometry(rad(i), 12, 8), ivory); j.position.copy(pts[i]!); body.add(j);
+        }
+      }
+    }
+    if (rung === 4) { // Siren: a gold base under a clear dome, with red and blue lamps inside that spin and flash
+      body.add(this.cyl(0.19, 0.21, 0.08, M.gold, x, y + 0.04, 0, undefined, 24));
+      const dome = new THREE.Mesh(new THREE.SphereGeometry(0.17, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), this.mat(std(0xffffff, { transparent: true, opacity: 0.3, roughness: 0.05 })));
+      dome.position.set(x, y + 0.08, 0); dome.scale.y = 1.5; body.add(dome);
+      const rotor = new THREE.Group(); rotor.position.set(x, y + 0.18, 0); body.add(rotor);
+      const red = this.glow(0xff1a1a, 3), blue = this.glow(0x1a6bff, 3);
+      rotor.add(this.cyl(0.025, 0.025, 0.18, M.chrome, 0, 0, 0, undefined, 8));
+      [red, blue].forEach((m, i) => {
+        const s = i ? -1 : 1, beam = this.mat(new THREE.MeshBasicMaterial({ color: i ? 0x1a6bff : 0xff1a1a, transparent: true, opacity: 0.16, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+        rotor.add(this.box(0.04, 0.13, 0.16, m, s * 0.07, 0, 0));
+        const cg = new THREE.ConeGeometry(0.3, 1.4, 20, 1, true); cg.rotateZ(s * Math.PI / 2); cg.translate(s * 0.75, 0, 0); rotor.add(new THREE.Mesh(cg, beam));
+      });
+      const light = new THREE.PointLight(0xff1a1a, 3, 3); light.position.set(x, y + 0.4, 0); body.add(light);
+      this.anim.siren = { rotor, lamps: [red, blue], light };
+    }
+  }
+
   build(): BuiltTruck {
     const { B, f, r, tw, W } = this;
     const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
@@ -463,7 +530,8 @@ class Builder {
     this.grille(fx, headY);
     this.lights(fx, headY, w0, w1);
     this.horn();
-    const stack = this.stackAt(), exhaust = new Exhaust(f.exhaust, this.exhaust(stack)), tip = exhaust.tips[0]!.p;
+    this.topper();
+    const roofTop = this.topperAt(), flagAt = this.antennaAt(), stack = this.stackAt(), exhaust = new Exhaust(f.exhaust, this.exhaust(stack)), tip = exhaust.tips[0]!.p;
     this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = !(o.material as THREE.Material).transparent; });
     const ch = this.ch;
     return {
@@ -482,6 +550,8 @@ class Builder {
           grille: { p: new V3(toX(B.front) + 0.14, ch + Math.max(0.05, headY - 0.16), 0), n: new V3(1, 0, 0), min: -0.15 }, // below Lights, the same for every Rung
           exhaust: f.exhaust ? { p: new V3(stack.x, ch + stack.top, side * stack.z), n: null, min: 0 } // on a stack
             : this.bodyId === 'tractor' ? { p: tip.clone(), n: null, min: 0 } : { p: tip.clone(), n: new V3(-1, 0, 0), min: -0.15 }, // on the Tailpipe
+          topper: f.topper === 1 ? { p: new V3(flagAt.x - 0.18, ch + flagAt.y + 0.85, side * flagAt.z), n: null, min: 0 } // on the flag
+            : { p: new V3(roofTop.x, ch + roofTop.y + 0.35, 0), n: null, min: 0 }, // over the back of the roof
         };
       },
       dispose: () => {

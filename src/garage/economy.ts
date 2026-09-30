@@ -8,7 +8,7 @@ export const PRICES = {
   bodies: { firetruck: 50, schoolbus: 75, jeep: 100, towtruck: 125, dumptruck: 150, police: 175, icecream: 200, tractor: 250, racecar: 300 },
 } as const;
 /** Legendary Mods, in cents: $1.35 to $4.80, using everything up to the $5 bill. */
-export const CASH_PRICES = { tires: 135, paint: 210, grille: 245, decals: 275, exhaust: 320, lights: 360, engine: 395, horn: 480 } as const satisfies Record<SlotId, number>;
+export const CASH_PRICES = { tires: 135, paint: 210, grille: 245, decals: 275, exhaust: 320, lights: 360, engine: 395, topper: 415, horn: 480 } as const satisfies Record<SlotId, number>;
 
 export type Price = { bolts: number; cents?: never } | { cents: number; bolts?: never };
 

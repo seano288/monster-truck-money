@@ -9,7 +9,7 @@ import { POINT_SCALE, PUFF } from './exhaust';
 import { buildTruck, type BuiltTruck } from './truck';
 
 // Camera per Slot when its sheet opens: [x, z] direction from the Truck, polar angle
-const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35], exhaust: [-1, 0.9, 1.1] };
+const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35], exhaust: [-1, 0.9, 1.1], topper: [-0.7, 1, 0.85] };
 export const IDLE_SPIN_MS = 12000;
 /** How long a Dragon Jaw snap takes: two chomps. */
 const SNAP_MS = 700;
@@ -255,6 +255,13 @@ export class GarageStage {
         const k = (now - this.snapAt) / SNAP_MS;
         t.anim.jaw.hinge.rotation.z = -(k < 1 ? 0.75 * Math.abs(Math.sin(k * Math.PI * 2)) : 0.07 + 0.05 * Math.sin(now / 500));
         t.anim.jaw.fire.emissiveIntensity = 0.9 + 0.35 * Math.sin(now / 90) * Math.sin(now / 37);
+      }
+      t.anim.wave?.(now);
+      if (t.anim.siren) {
+        const { rotor, lamps, light } = t.anim.siren, k = Math.floor(now / 260) % 2;
+        rotor.rotation.y = now / 150;
+        lamps.forEach((m, i) => { m.emissiveIntensity = i === k ? 5 : 1.2; });
+        light.color.setHex(k ? 0x1a6bff : 0xff1a1a); light.intensity = 2 + 2.5 * Math.abs(Math.sin(now / 70));
       }
       t.anim.repaint?.(now);
       this.placeHotspots(t);

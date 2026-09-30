@@ -57,6 +57,26 @@ export const ENGINES: readonly (() => void)[] = [
     noise({ dur: 1.6, vol: 0.5, f: 1400, when: 0.35 }); tone(48, 1.6, 'sawtooth', 0.35, 0.28, 32); tone(96, 1.4, 'square', 0.35, 0.08, 60);
   },
 ];
+/** The Siren Roof Topper: a wail that rises and falls twice. A wail already going isn't doubled up. */
+let sirenUntil = 0;
+export function sSiren() {
+  try {
+    const c = audio(), t = c.currentTime;
+    if (t < sirenUntil) return;
+    sirenUntil = t + 1.8;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(620, t);
+    for (const k of [0, 1]) { o.frequency.linearRampToValueAtTime(1250, t + k * 0.9 + 0.45); o.frequency.linearRampToValueAtTime(620, t + k * 0.9 + 0.9); }
+    g.gain.setValueAtTime(0.001, t);
+    g.gain.exponentialRampToValueAtTime(0.07, t + 0.08);
+    g.gain.setValueAtTime(0.07, t + 1.6);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 1.8);
+    o.connect(g).connect(c.destination);
+    o.start(t);
+    o.stop(t + 1.85);
+  } catch { /* no audio */ }
+}
 export const sNope = () => tone(220, 0.22, 'square', 0, 0.08, 160);
 
 // ---------- celebration sounds ----------

@@ -86,7 +86,7 @@ export function GarageScreen() {
       else if (slot !== 'engine') { sClink(); void say(modName(slot, rung)); }
     } else if (result === 'unlocked') {
       const r = rung as 1 | 2 | 3;
-      if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, r, currentFit().engine, gotLine(modId(slot, r))));
+      if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, r, currentFit(), gotLine(modId(slot, r))));
     } else if (result === 'checkout') {
       setCheckout(slot);
     } else if (result === 'waiting') {
@@ -101,13 +101,13 @@ export function GarageScreen() {
   function paid(slot: SlotId, cents: number) {
     buyLegendary(slot, cents);
     setCheckout(null);
-    if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, LEGENDARY, currentFit().engine, gotLine(modId(slot, LEGENDARY))));
+    if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, LEGENDARY, currentFit(), gotLine(modId(slot, LEGENDARY))));
   }
 
   function tapBodyChip(b: BodyId) {
     const result = tapBody(b);
     if (result === 'switched') void say(BODY_NAMES[b]);
-    else if (result === 'bought') { if (!isStarter(b) && stage) block(celebrateBody(stage, stageEl.current!, currentFit().engine, gotLine(bodyItem(b)))); }
+    else if (result === 'bought') { if (!isStarter(b) && stage) block(celebrateBody(stage, stageEl.current!, currentFit(), gotLine(bodyItem(b)))); }
     else { nope(`body:${b}`); if (!isStarter(b)) void say(...needLines(bodyItem(b))); }
   }
 
@@ -136,7 +136,7 @@ export function GarageScreen() {
       </header>
       <div class="garage-stage" ref={stageEl}>
         <canvas ref={canvas} />
-        {showing && stage ? <ShowOff stage={stage} canvas={canvas.current!} stageEl={stageEl.current!} body={body} horn={f.horn} engine={f.engine} onClose={endShow} /> : (
+        {showing && stage ? <ShowOff stage={stage} canvas={canvas.current!} stageEl={stageEl.current!} body={body} horn={f.horn} engine={f.engine} topper={f.topper} onClose={endShow} /> : (
           <div class="garage-overlay">
             <div class="bodyname">{BODY_NAMES[body]}</div>
             <button class="arrow l" aria-label="Previous truck" onClick={() => bodyStep(-1)}>◀</button>

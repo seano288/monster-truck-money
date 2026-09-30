@@ -63,8 +63,8 @@ describe('migrate: version 1 to 2', () => {
 
   it('gives the new Bodies default fits', () => {
     const s = migrate({ version: 1 });
-    expect(s.fitted.firetruck).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0 });
-    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0 });
+    expect(s.fitted.firetruck).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
+    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
   });
 
   it('shows the Legendaries locked', () => {
@@ -105,7 +105,7 @@ describe('migrate: the Engine Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(9);
     expect(s.unlocked).toEqual(['horn:3', 'horn:4']);
-    expect(s.fitted.pickup).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 4, engine: 0, grille: 0, exhaust: 0 });
+    expect(s.fitted.pickup).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 4, engine: 0, grille: 0, exhaust: 0, topper: 0 });
   });
 
   it('keeps an Engine Mod he unlocked and fitted', () => {
@@ -121,7 +121,7 @@ describe('migrate: the Grille Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(12);
     expect(s.unlocked).toEqual(['tires:2', 'paint:1', 'lights:3', 'engine:1']);
-    expect(s.fitted.jeep).toEqual({ tires: 2, paint: 1, decals: 0, lights: 3, horn: 0, engine: 1, grille: 0, exhaust: 0 });
+    expect(s.fitted.jeep).toEqual({ tires: 2, paint: 1, decals: 0, lights: 3, horn: 0, engine: 1, grille: 0, exhaust: 0, topper: 0 });
     expect(s.fitted.pickup.grille).toBe(0);
   });
 
@@ -138,13 +138,30 @@ describe('migrate: the Exhaust Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(7);
     expect(s.unlocked).toEqual(['grille:3', 'grille:4', 'tires:1']);
-    expect(s.fitted.racecar).toEqual({ tires: 1, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 4, exhaust: 0 });
+    expect(s.fitted.racecar).toEqual({ tires: 1, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 4, exhaust: 0, topper: 0 });
     expect(s.fitted.pickup.exhaust).toBe(0);
   });
 
   it('keeps an Exhaust Mod he unlocked and fitted', () => {
     const s = migrate({ version: SAVE_VERSION, unlocked: ['exhaust:3'], fitted: { dragster: { exhaust: 3 } } });
     expect(s.fitted.dragster.exhaust).toBe(3);
+  });
+});
+
+describe('migrate: the Roof Topper Slot', () => {
+  it('loads a save from before the Roof Topper with its fits kept and no Topper fitted', () => {
+    const old = { version: SAVE_VERSION, bolts: 3, unlocked: ['exhaust:1', 'lights:2'], fitted: { police: { tires: 0, paint: 0, decals: 0, lights: 2, horn: 0, engine: 0, grille: 0, exhaust: 1 } } };
+    const s = migrate(old);
+    expect(s.version).toBe(SAVE_VERSION);
+    expect(s.bolts).toBe(3);
+    expect(s.unlocked).toEqual(['exhaust:1', 'lights:2']);
+    expect(s.fitted.police).toEqual({ tires: 0, paint: 0, decals: 0, lights: 2, horn: 0, engine: 0, grille: 0, exhaust: 1, topper: 0 });
+    expect(s.fitted.pickup.topper).toBe(0);
+  });
+
+  it('keeps a Roof Topper he unlocked and fitted', () => {
+    const s = migrate({ version: SAVE_VERSION, unlocked: ['topper:4'], fitted: { racecar: { topper: 4 } } });
+    expect(s.fitted.racecar.topper).toBe(4);
   });
 });
 
@@ -160,9 +177,9 @@ describe('migrate: the second batch of Bodies', () => {
     expect(s.body).toBe('jeep');
     expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'jeep']);
     expect(s.goal).toBe('body:firetruck');
-    expect(s.fitted.jeep).toEqual({ tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0 });
+    expect(s.fitted.jeep).toEqual({ tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
     for (const b of ['towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const) {
-      expect(s.fitted[b]).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0 });
+      expect(s.fitted[b]).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
     }
   });
 
