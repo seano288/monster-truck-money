@@ -245,7 +245,6 @@ export const CLIPS: Record<string, string> = {
   "You need 59 more Bolts.": "336c9075809c.mp3",
   "You need 60 more Bolts.": "158f411c1ae5.mp3",
   "Show time!": "8162faa131aa.mp3",
-  "Say cheese!": "415f0a9a253f.mp3",
   "1 cent": "3fc27a3f0f2e.mp3",
   "2 cents": "dbd9ed84cf6c.mp3",
   "3 cents": "e1a77b837dfb.mp3",

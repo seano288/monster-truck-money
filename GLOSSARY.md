@@ -29,4 +29,4 @@ _Avoid_: Tier, level (Level means how hard a Game Mode is)
 
 **Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost (or money price, for a Legendary), and the Bodies owned and still to buy.
 
-**Show Off**: The Garage's stage moment: the current Truck spins under a spotlight while the crowd cheers, performs a move when tapped, and can be saved as a photo.
+**Show Off**: The Garage's stage moment: the current Truck spins under a spotlight while the crowd cheers, and performs a move when tapped.

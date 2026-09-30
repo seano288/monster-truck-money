@@ -190,10 +190,6 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
 .show-overlay>button{pointer-events:auto}
 .showname{position:absolute;top:calc(16px + env(safe-area-inset-top));left:0;right:0;text-align:center;font:400 calc(40px*var(--u)) Bungee,sans-serif;color:var(--yellow);text-shadow:3px 3px 0 var(--red),5px 5px 0 #000}
 .show-x{position:absolute;top:calc(14px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));width:calc(84px*var(--u));height:calc(84px*var(--u));border-radius:50%;background:#000c;border:4px solid #fff;color:#fff;font-size:calc(40px*var(--u))}
-.show-cam{position:absolute;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);width:calc(112px*var(--u));height:calc(112px*var(--u));border-radius:50%;background:#fff;border:6px solid #000;box-shadow:0 6px 0 #000,0 0 30px 6px #fff6;font-size:calc(52px*var(--u))}
-.show-cam:active{transform:translateX(-50%) translateY(4px);box-shadow:0 2px 0 #000}
-.flash{position:fixed;inset:0;z-index:70;background:#fff;pointer-events:none;animation:flash .6s ease-out forwards}
-@keyframes flash{from{opacity:1}to{opacity:0}}
 
 /* ---------- Goal bar ---------- */
 .goalchip{display:flex;align-items:center;gap:8px;background:#000c;color:#fff;border-radius:999px;padding:4px 14px 4px 6px;font:900 calc(18px*var(--u)) Nunito,sans-serif;min-width:0;flex:0 1 auto;height:calc(52px*var(--u))}

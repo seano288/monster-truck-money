@@ -1,6 +1,6 @@
 // The Garage stage: the Truck on a turntable he can spin, a camera that swings to a Slot's part,
 // hotspots that follow the parts, a slow spin after 12 s idle, and the Truck's jumps. For Show Off it dims the
-// lights, puts a spotlight on the Truck and spins the turntable, and takes the photo on a bright background.
+// lights, puts a spotlight on the Truck and spins the turntable.
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
@@ -132,35 +132,6 @@ export class GarageStage {
     return ray.intersectObject(this.truck.group, true).length > 0;
   }
 
-  /**
-   * The photo: the Truck as it is now, on a bright show background with the lights up, and his Body's name on it.
-   * It's rendered and read back in one go, so the drawing buffer doesn't need preserving, and it's synchronous so
-   * the share sheet can still open inside the tap.
-   */
-  photo(title: string): File {
-    const { scene, lights: L, renderer } = this, was = { bg: scene.background, fog: scene.fog };
-    const bright = showBackground();
-    scene.background = bright; scene.fog = null; scene.environmentIntensity = 0.9;
-    L.floor.visible = L.beam.visible = L.spot.visible = false;
-    L.hemi.intensity = 0.9; L.sun.intensity = 2.6; L.rim.intensity = 1.3;
-    renderer.render(scene, this.camera);
-    const src = renderer.domElement, out = document.createElement('canvas');
-    out.width = src.width; out.height = src.height;
-    const c = out.getContext('2d')!;
-    c.drawImage(src, 0, 0);
-    const h = out.height, fs = Math.round(Math.min(out.width * 0.09, h * 0.11));
-    c.font = `${fs}px Bungee, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
-    c.lineWidth = fs * 0.22; c.strokeStyle = '#000'; c.strokeText(title, out.width / 2, h - fs * 0.6);
-    c.fillStyle = '#ffd23f'; c.fillText(title, out.width / 2, h - fs * 0.6);
-    scene.background = was.bg; scene.fog = was.fog;
-    bright.dispose();
-    L.floor.visible = true;
-    this.light(this.showing);
-    const bin = atob(out.toDataURL('image/png').split(',')[1]!), bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-    return new File([bytes], `${title}.png`, { type: 'image/png' });
-  }
-
   /** Where on the page the Truck is (for sparks). */
   truckPoint(): { x: number; y: number } {
     const v = new THREE.Vector3(0, 1, 0).project(this.camera), rc = this.stage.getBoundingClientRect();
@@ -266,19 +237,4 @@ export class GarageStage {
     }
     this.onHotspots(out);
   }
-}
-
-/** A bright stage backdrop for the photo: sun rays on a yellow-to-orange glow. */
-function showBackground() {
-  const cv = document.createElement('canvas'); cv.width = cv.height = 512;
-  const c = cv.getContext('2d')!, g = c.createRadialGradient(256, 220, 20, 256, 256, 360);
-  g.addColorStop(0, '#fff6b0'); g.addColorStop(0.45, '#ffc53d'); g.addColorStop(1, '#ff6a00');
-  c.fillStyle = g; c.fillRect(0, 0, 512, 512);
-  c.fillStyle = 'rgba(255,255,255,.18)';
-  for (let i = 0; i < 16; i += 2) {
-    const a = (i / 16) * Math.PI * 2, b = ((i + 1) / 16) * Math.PI * 2;
-    c.beginPath(); c.moveTo(256, 220); c.lineTo(256 + Math.cos(a) * 800, 220 + Math.sin(a) * 800); c.lineTo(256 + Math.cos(b) * 800, 220 + Math.sin(b) * 800); c.fill();
-  }
-  const t = new THREE.CanvasTexture(cv); t.colorSpace = THREE.SRGBColorSpace;
-  return t;
 }

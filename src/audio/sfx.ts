@@ -70,5 +70,3 @@ export const sCheer = () => {
   noise({ dur: 2.4, vol: 0.12, type: 'bandpass', f: 2400 });
   tone(1900, 0.5, 'sine', 0.3, 0.05, 2600); tone(2200, 0.4, 'sine', 0.9, 0.04, 1600);
 };
-/** The camera shutter: a click and a snap. */
-export const sShutter = () => { noise({ dur: 0.05, vol: 0.5, type: 'highpass', f: 3000 }); noise({ dur: 0.09, vol: 0.35, type: 'highpass', f: 1800, when: 0.08 }); };

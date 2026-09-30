@@ -78,7 +78,7 @@ const garagePhrases = (): GaragePhrase[] => {
 };
 
 // ---------- Show Off ----------
-const SHOW = ['Show time!', 'Say cheese!'] as const;
+const SHOW = ['Show time!'] as const;
 
 export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | Of<typeof SHOW> | AmountPiece;
 
