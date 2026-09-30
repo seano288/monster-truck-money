@@ -2,13 +2,15 @@
 // a clear-coat, one canvas texture for Paint and Decals projected from the side, a tube chassis with 4-link
 // suspension and coil-overs, lathe-turned tires with tread that grows per Mod, beadlock rims, and per-Body extras.
 // The Legendaries (Rung 4) go a step past the top Rung: gold spiked paddle tires, flaked gold paint, a skull with
-// wings, spinning lasers, a roof-top train horn, a gold dragon jaw that chomps, gold stacks that blast a rainbow and a
-// spinning Siren.
+// wings, spinning lasers, a roof-top train horn, a gold dragon jaw that chomps, gold stacks that blast a rainbow, a
+// spinning Siren and a glowing gold Door Number. The Door Number is on a panel of its own on each side, so it reads
+// the right way round on both.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
-import type { BodyId, Fit, SlotId } from '../catalog';
+import type { BodyId, Fit, Rung, SlotId } from '../catalog';
 import { Exhaust, type Tip } from './exhaust';
-import { BODIES, LIFT, parsePath, TIRE_R, TIRE_W, toX, toY, U, type BodyShape } from './bodies';
+import { BODIES, LIFT, parsePath, TIRE_R, TIRE_W, toX, toY, TREAD, U, type BodyShape } from './bodies';
+import { BOLT, BOLTS, decalShapes, FLAME1, FLAME2, numberBox, numberSpot, SKULL, WING, type NumberSpot } from './sidePaint';
 
 const V3 = THREE.Vector3, V2 = THREE.Vector2;
 type Pt = [number, number];
@@ -103,6 +105,8 @@ export interface TruckAnim {
   wave: ((t: number) => void) | null;
   /** Siren: the lamps spin round and flash red and blue. */
   siren: { rotor: THREE.Object3D; lamps: [THREE.MeshStandardMaterial, THREE.MeshStandardMaterial]; light: THREE.PointLight } | null;
+  /** Glowing Gold: the Door Number's glow pulses. */
+  goldNumber: THREE.MeshStandardMaterial | null;
 }
 
 export interface BuiltTruck {
@@ -110,6 +114,8 @@ export interface BuiltTruck {
   anim: TruckAnim;
   /** The Exhaust's puffs. They live in the turntable's space, not the Truck's, so the stage adds them there. */
   exhaust: Exhaust;
+  /** Paint a new number on the door, without rebuilding the Truck (he turns the wheels fast). */
+  setDoorNumber(n: number): void;
   /** Hotspot anchors in the Truck's space; the side ones are mirrored to whichever side the camera is on. */
   anchors(side: 1 | -1): Record<SlotId, { p: THREE.Vector3; n: THREE.Vector3 | null; min: number }>;
   dispose(): void;
@@ -124,7 +130,7 @@ class Builder {
   readonly own: THREE.Material[] = [];
   readonly truck = new THREE.Group();
   readonly body = new THREE.Group();
-  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null, jaw: null, wave: null, siren: null };
+  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null, jaw: null, wave: null, siren: null, goldNumber: null };
 
   constructor(readonly bodyId: BodyId, readonly f: Fit) {
     this.B = BODIES[bodyId];
@@ -176,8 +182,8 @@ class Builder {
     p.push(new V2(rimR, hw * 0.9));
     return new THREE.LatheGeometry(p, seg).rotateX(Math.PI / 2);
   }
-  wheel(rung: number, r: number, w: number) {
-    const g = new THREE.Group(), rimR = r * 0.6, n = [30, 20, 16, 16, 12][rung]!, h = [0.022, 0.045, 0.075, 0.075, 0.1][rung]!;
+  wheel(rung: Rung, r: number, w: number) {
+    const g = new THREE.Group(), rimR = r * 0.6, n = [30, 20, 16, 16, 12][rung]!, h = TREAD[rung] / U;
     g.add(new THREE.Mesh(this.tireGeo(r - 0.01, w, rimR, Math.min(0.09, w * 0.3)), M.rubber));
     for (let i = 0; i < n; i++) {
       const a = (i / n) * Math.PI * 2, rr = r + h / 2 - 0.015;
@@ -513,11 +519,32 @@ class Builder {
     }
   }
 
+  // --- Door Number: a panel on each side of the shell, just off its flat face ---
+  doorNumber(spot: NumberSpot) {
+    const { f } = this, box = numberBox(spot), w = box.x1 - box.x0, h = box.y1 - box.y0;
+    const cv = document.createElement('canvas'); cv.width = 512; cv.height = Math.round((512 * h) / w);
+    const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace; tex.anisotropy = 8;
+    let n = f.doorNumber;
+    const draw = () => { drawNumber(cv, f.number, n, spot); tex.needsUpdate = true; };
+    draw();
+    if (typeof document.fonts?.load === 'function' && !document.fonts.check('100px Bungee')) void document.fonts.load('100px Bungee').then(draw, () => {});
+    const gold = f.number === 4;
+    const m = this.mat(std(0xffffff, { map: tex, transparent: true, roughness: 0.3, metalness: gold ? 0.5 : 0.1, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2, ...(gold ? { emissive: 0xffffff, emissiveMap: tex, emissiveIntensity: 0.8 } : {}) }));
+    if (gold) this.anim.goldNumber = m;
+    const geo = new THREE.PlaneGeometry(w / U, h / U), z = this.W / 2 + SH.bt + 0.004;
+    for (const side of [1, -1]) {
+      const o = new THREE.Mesh(geo, m); o.position.set(toX((box.x0 + box.x1) / 2), toY((box.y0 + box.y1) / 2), side * z);
+      if (side < 0) o.rotation.y = Math.PI;
+      this.body.add(o);
+    }
+    return { tex, set: (to: number) => { n = to; draw(); } };
+  }
+
   build(): BuiltTruck {
     const { B, f, r, tw, W } = this;
     const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 512;
-    const { tex, bb } = this.shell(cv);
-    const draw = (t: number) => { drawPaint(cv, bb, B, f, this.bodyId, t); tex.needsUpdate = true; };
+    const { tex, bb } = this.shell(cv), spot = numberSpot(this.bodyId, f.decals, f.tires), fitted = f.number ? spot : null;
+    const draw = (t: number) => { drawPaint(cv, bb, B, f, this.bodyId, fitted, t); tex.needsUpdate = true; };
     draw(performance.now());
     if (f.paint >= 3) this.anim.repaint = draw;
     const fx = toX(B.front) + SH.bs - 0.05, headY = toY(B.head[1]), [w0, w1] = B.wheels.map(toX) as [number, number], zW = W / 2 + tw / 2 + 0.04;
@@ -531,6 +558,7 @@ class Builder {
     this.lights(fx, headY, w0, w1);
     this.horn();
     this.topper();
+    const num = fitted && this.doorNumber(fitted);
     const roofTop = this.topperAt(), flagAt = this.antennaAt(), stack = this.stackAt(), exhaust = new Exhaust(f.exhaust, this.exhaust(stack)), tip = exhaust.tips[0]!.p;
     this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = !(o.material as THREE.Material).transparent; });
     const ch = this.ch;
@@ -538,12 +566,14 @@ class Builder {
       group: this.truck,
       anim: this.anim,
       exhaust,
+      setDoorNumber: n => num?.set(n),
       anchors: side => {
         const sideAt = ([x, y]: Pt) => ({ p: new V3(toX(x), ch + toY(y), side * (W / 2 + 0.1)), n: new V3(0, 0, side), min: 0.2 });
         return {
           tires: { p: new V3(toX(B.wheels[0]), r, side * (zW + tw / 2 + 0.03)), n: new V3(0, 0, side), min: 0.2 },
           paint: sideAt(B.hot.paint),
           decals: sideAt(B.hot.decals),
+          number: sideAt([spot.x, spot.y]),
           lights: { p: new V3(toX(B.front) + 0.14, ch + toY(B.head[1]), 0), n: new V3(1, 0, 0), min: -0.15 },
           horn: { p: new V3(toX(B.hot.horn[0]), ch + toY(B.hot.horn[1]), 0), n: null, min: 0 },
           engine: { p: new V3(toX(B.hot.engine[0]), ch + toY(B.hot.engine[1]), 0), n: null, min: 0 },
@@ -557,7 +587,7 @@ class Builder {
       dispose: () => {
         this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.geometry.dispose(); });
         for (const m of this.own) if (!SHARED.has(m)) m.dispose();
-        tex.dispose();
+        tex.dispose(); num?.tex.dispose();
         exhaust.dispose();
       },
     };
@@ -570,12 +600,8 @@ class Helix extends THREE.Curve<THREE.Vector3> {
 }
 
 // ---------- Paint and Decals: one canvas, drawn in profile units and projected from the side ----------
-const FLAME1 = 'M0,-3 C-40,-3 -60,-30 -90,-20 C-72,-36 -100,-46 -120,-32 C-106,-52 -134,-58 -152,-40 C-142,-16 -100,-1 -60,1 Z';
-const FLAME2 = 'M0,-3 C-30,-4 -44,-20 -64,-14 C-52,-26 -72,-30 -86,-22 C-80,-10 -50,-1 -30,0 Z';
-const BOLT = 'M-4,-54 L-26,-18 L-8,-20 L-20,6 L18,-32 L0,-30 L12,-54 Z';
-const WING = 'M-12,-34 C-34,-62 -74,-62 -94,-48 C-78,-46 -82,-38 -94,-32 C-78,-30 -80,-22 -90,-16 C-60,-14 -32,-20 -12,-26 Z';
-
-function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, bodyId: BodyId, t: number) {
+/** `num` is where a fitted Door Number is: the Stripes break round it. */
+function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, bodyId: BodyId, num: NumberSpot | null, t: number) {
   const c = cv.getContext('2d')!, CW = cv.width, CH = cv.height, dx = bb.max.x - bb.min.x, dy = bb.max.y - bb.min.y;
   c.setTransform(CW / (U * dx), 0, 0, CH / (U * dy), (-2 - bb.min.x) * CW / dx, CH + (bb.min.y * CH) / dy);
   let fill: string | CanvasGradient;
@@ -599,18 +625,17 @@ function drawPaint(cv: HTMLCanvasElement, bb: THREE.Box3, B: BodyShape, f: Fit, 
     }
   }
   c.save(); c.clip(new Path2D(B.path));
-  if (f.decals === 1) { c.fillStyle = '#fff'; c.fillRect(-50, -26, 500, 6); c.fillRect(-50, -16, 500, 6); }
+  if (f.decals === 1) { c.fillStyle = '#fff'; for (const p of decalShapes(B, 1, num)) { c.beginPath(); p.forEach(([x, y]) => c.lineTo(x, y)); c.fill(); } }
   if (f.decals === 2) { c.save(); c.translate(B.front, 0); c.fillStyle = '#ff7a00'; c.fill(new Path2D(FLAME1)); c.fillStyle = '#ffe14d'; c.fill(new Path2D(FLAME2)); c.restore(); }
   if (f.decals === 3) {
     const b = new Path2D(BOLT); c.lineWidth = 2.5; c.strokeStyle = '#111'; c.fillStyle = '#fff23a'; c.lineJoin = 'round';
-    c.save(); c.translate(B.mid, 0); c.fill(b); c.stroke(b); c.restore();
-    c.save(); c.translate(B.mid - 100, 0); c.scale(0.7, 0.7); c.fill(b); c.stroke(b); c.restore();
+    for (const [dx, k] of BOLTS) { c.save(); c.translate(B.mid + dx, 0); c.scale(k, k); c.fill(b); c.stroke(b); c.restore(); }
   }
   if (f.decals === 4) { // Skull & Wings
     c.save(); c.translate(B.mid, 0); c.lineWidth = 2.5; c.strokeStyle = '#111'; c.lineJoin = 'round';
     const wing = new Path2D(WING); c.fillStyle = '#f2f2f2';
     for (const sx of [1, -1]) { c.save(); c.scale(sx, 1); c.fill(wing); c.stroke(wing); c.restore(); }
-    c.beginPath(); c.arc(0, -36, 15, 0, Math.PI * 2); c.rect(-9, -26, 18, 10); c.fill(); c.stroke();
+    c.beginPath(); c.arc(...SKULL.head, 0, Math.PI * 2); c.rect(...SKULL.jaw); c.fill(); c.stroke();
     c.fillStyle = '#111'; c.beginPath(); c.arc(-6, -38, 4.5, 0, Math.PI * 2); c.arc(6, -38, 4.5, 0, Math.PI * 2); c.fill();
     c.beginPath(); c.moveTo(0, -33); c.lineTo(-2.5, -29); c.lineTo(2.5, -29); c.fill();
     for (const x of [-4.5, 0, 4.5]) { c.beginPath(); c.moveTo(x, -26); c.lineTo(x, -17); c.stroke(); }
@@ -636,6 +661,38 @@ function realPaint(c: CanvasRenderingContext2D, B: BodyShape, bodyId: BodyId) {
   const mud = c.createLinearGradient(0, -30, 0, 0); mud.addColorStop(0, 'rgba(92,64,38,0)'); mud.addColorStop(1, 'rgba(92,64,38,.65)'); c.fillStyle = mud; c.fillRect(-100, -30, 600, 30);
   const rn = seeded(7); c.fillStyle = 'rgba(84,58,34,.6)';
   for (let i = 0; i < 110; i++) { const x = B.back + rn() * (B.front - B.back), y = -(rn() ** 2) * 44, r = 0.8 + rn() * 3.2; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill(); }
+}
+
+// ---------- Door Number: its own canvas, the number's box from numberBox ----------
+const FLAME_UP = 'M0,0 C-10,-8 -8,-22 0,-36 C4,-24 14,-18 10,-4 C16,-10 18,-18 18,-24 C26,-12 24,0 18,6 Z';
+
+/** Plain white, white Outlined in black and red, Flaming with fire off the top, or Glowing Gold; on a plate when it covers a Decal. */
+function drawNumber(cv: HTMLCanvasElement, style: Rung, n: number, spot: NumberSpot) {
+  const c = cv.getContext('2d')!, W = cv.width, H = cv.height, k = W / (1.6 * spot.h); // canvas px per profile unit
+  const cx = W / 2, cy = 0.8 * spot.h * k, dh = spot.h * k, text = String(n);
+  c.clearRect(0, 0, W, H);
+  if (spot.plate) { c.fillStyle = '#16181c'; c.strokeStyle = '#f2f2f2'; c.lineWidth = 12; c.beginPath(); c.roundRect(8, 8, W - 16, H - 16, 40); c.fill(); c.stroke(); }
+  c.font = `400 ${dh}px Bungee, "Arial Black", sans-serif`; c.textAlign = 'center'; c.textBaseline = 'alphabetic'; c.lineJoin = 'round';
+  const m = c.measureText(text), size = dh * Math.min(dh / Math.max(1, m.actualBoundingBoxAscent + m.actualBoundingBoxDescent), (W * 0.84) / Math.max(1, m.width));
+  c.font = `400 ${size}px Bungee, "Arial Black", sans-serif`;
+  const mm = c.measureText(text), base = cy + (mm.actualBoundingBoxAscent - mm.actualBoundingBoxDescent) / 2, top = base - mm.actualBoundingBoxAscent;
+  const maxW = W * 0.84, outline = (w: number, col: string) => { c.lineWidth = w; c.strokeStyle = col; c.strokeText(text, cx, base, maxW); };
+  if (style === 1) { outline(dh * 0.06, '#16181c'); c.fillStyle = '#fff'; }
+  if (style === 2) { outline(dh * 0.24, '#e63946'); outline(dh * 0.13, '#111'); c.fillStyle = '#fff'; }
+  if (style === 3) {
+    const fl = new Path2D(FLAME_UP), half = mm.width / 2;
+    for (let i = 0; i < 5; i++) {
+      const x = cx - half + (mm.width * (i + 0.5)) / 5, s = (dh / 60) * (i % 2 ? 0.8 : 1.05);
+      c.save(); c.translate(x, top + dh * 0.12); c.scale(s, s); c.fillStyle = '#ff6a00'; c.fill(fl); c.scale(0.6, 0.6); c.fillStyle = '#ffe14d'; c.fill(fl); c.restore();
+    }
+    outline(dh * 0.15, '#111');
+    const g = c.createLinearGradient(0, top, 0, base); g.addColorStop(0, '#ffe14d'); g.addColorStop(0.5, '#ff8a00'); g.addColorStop(1, '#d42000'); c.fillStyle = g;
+  }
+  if (style === 4) {
+    c.save(); c.shadowColor = '#ffd23f'; c.shadowBlur = dh * 0.25; outline(dh * 0.16, '#3a2600'); c.restore();
+    const g = c.createLinearGradient(0, top, 0, base); g.addColorStop(0, '#fff6c0'); g.addColorStop(0.45, '#ffc21a'); g.addColorStop(1, '#9a6a00'); c.fillStyle = g;
+  }
+  c.fillText(text, cx, base, maxW);
 }
 
 export const buildTruck = (body: BodyId, fit: Fit): BuiltTruck => new Builder(body, fit).build();

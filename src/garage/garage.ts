@@ -31,6 +31,12 @@ function fit(slot: SlotId, rung: Rung) {
   update(s => ({ ...s, fitted: { ...s.fitted, [body]: { ...s.fitted[body], [slot]: rung } } }));
 }
 
+/** The number on this Body's door. Changing it is always free. */
+export function setDoorNumber(n: number) {
+  const body = currentBody();
+  update(s => ({ ...s, fitted: { ...s.fitted, [body]: { ...s.fitted[body], doorNumber: n } } }));
+}
+
 export const isUnlocked = (slot: SlotId, rung: Rung) => rung === 0 || game.value.unlocked.includes(modId(slot, rung));
 /** A Bolt item he has enough Bolts for. */
 const canBuyWithBolts = (x: Buyable) => isLocked(game.value, x) && priceOf(x).bolts !== undefined && boltsNeeded(game.value, x) === 0;

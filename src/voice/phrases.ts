@@ -1,6 +1,6 @@
 // The single typed list of everything the game says. tools/make_voice.py records a clip for each entry,
 // and the build fails if any is missing. say() accepts only these phrases (and amounts, joined from pieces).
-import { BODY_NAMES, BOUGHT_BODIES, SLOTS, type BodyName, type BoughtBody, type ModName, type SlotName } from '../garage/catalog';
+import { BODY_NAMES, BOUGHT_BODIES, MAX_DOOR_NUMBER, MIN_DOOR_NUMBER, SLOTS, type BodyName, type BoughtBody, type ModName, type SlotName } from '../garage/catalog';
 import { PRICES } from '../garage/economy';
 import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
 import { MODE_IDS, MODE_NAMES, type ModeId, type ModeName } from '../modes/ids';
@@ -66,11 +66,16 @@ type LegendaryName = Mods<4>;
 type BoughtBodyName = (typeof BODY_NAMES)[BoughtBody];
 type BoltsPhrase = `You need 1 more Bolt.` | `You need ${number} more Bolts.`;
 type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName | `You got ${BoltModName | BoughtBodyName}!` | `You can get ${BoltModName | BoughtBodyName}!`
-  | `${LegendaryName} costs` | `You bought ${LegendaryName}!` | `Get ${TopModName} first!` | BoltsPhrase;
+  | `${LegendaryName} costs` | `You bought ${LegendaryName}!` | `Get ${TopModName} first!` | BoltsPhrase | NumberPhrase;
 /** The most Bolts anything costs. */
 export const MAX_PRICE = Math.max(...Object.values(PRICES.rungs), ...Object.values(PRICES.bodies));
 /** "You need 4 more Bolts." */
 export const needBolts = (n: number): BoltsPhrase => (n === 1 ? 'You need 1 more Bolt.' : `You need ${n} more Bolts.`);
+/** "42!": the Door Number, read aloud as he turns the wheels. */
+type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9;
+type NumberPhrase = `${Digit}!` | `${Exclude<Digit, 0>}${Digit}!`;
+export const numberLine = (n: number) => `${n}!` as NumberPhrase;
+const numberPhrases = () => Array.from({ length: MAX_DOOR_NUMBER - MIN_DOOR_NUMBER + 1 }, (_, i) => numberLine(MIN_DOOR_NUMBER + i));
 const garagePhrases = (): GaragePhrase[] => {
   const boltMods = SLOTS.flatMap(s => s.mods.slice(1, 4)) as BoltModName[];
   const legendaries = SLOTS.map(s => s.mods[4]), tops = SLOTS.map(s => s.mods[3]);
@@ -79,7 +84,7 @@ const garagePhrases = (): GaragePhrase[] => {
     ...GARAGE, ...Object.values(BODY_NAMES), ...SLOTS.map(s => s.name), ...SLOTS.flatMap(s => s.mods),
     ...bought.map(m => `You got ${m}!` as const), ...bought.map(m => `You can get ${m}!` as const),
     ...legendaries.map(m => `${m} costs` as const), ...legendaries.map(m => `You bought ${m}!` as const), ...tops.map(m => `Get ${m} first!` as const),
-    ...Array.from({ length: MAX_PRICE }, (_, i) => needBolts(i + 1)),
+    ...Array.from({ length: MAX_PRICE }, (_, i) => needBolts(i + 1)), ...numberPhrases(),
   ];
 };
 

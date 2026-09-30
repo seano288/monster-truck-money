@@ -1,4 +1,4 @@
-// The Garage's parts: twelve Bodies (three starters, nine bought with Bolts), nine Slots, and in each Slot a free
+// The Garage's parts: twelve Bodies (three starters, nine bought with Bolts), ten Slots, and in each Slot a free
 // default plus four Mods: Rungs 1-3 bought with Bolts and a Legendary Rung 4 bought with money.
 export const BODY_IDS = [
   'pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep', 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar',
@@ -26,6 +26,7 @@ export const SLOTS = [
   { id: 'grille', name: 'Grille', icon: '🦈', mods: ['Plain', 'Chrome Bars', 'Bull Bar', 'Shark Teeth', 'Dragon Jaw'] },
   { id: 'exhaust', name: 'Exhaust', icon: '💨', mods: ['Tailpipe', 'Twin Stacks', 'Smoke Stacks', 'Flame Stacks', 'Rainbow Blast'] },
   { id: 'topper', name: 'Roof Topper', icon: '🚩', mods: ['None', 'Antenna Flag', 'Spoiler', 'Bull Horns', 'Siren'] },
+  { id: 'number', name: 'Door Number', icon: '#️⃣', mods: ['No Number', 'Plain', 'Outlined', 'Flaming', 'Glowing Gold'] },
 ] as const;
 export type Slot = (typeof SLOTS)[number];
 export type SlotId = Slot['id'];
@@ -63,5 +64,10 @@ export const buyableName = (x: Buyable): ModName | BodyName => {
   return modName(slot, rung);
 };
 
-export type Fit = Record<SlotId, Rung>;
-export const defaultFit = (): Fit => ({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
+/** The racing number on the door, which he picks himself. The Door Number Slot's Mods are its style. */
+export const MIN_DOOR_NUMBER = 0, MAX_DOOR_NUMBER = 99, DEFAULT_DOOR_NUMBER = 1;
+export const isDoorNumber = (n: unknown): n is number => Number.isInteger(n) && (n as number) >= MIN_DOOR_NUMBER && (n as number) <= MAX_DOOR_NUMBER;
+
+/** The Mods fitted on a Body, and the number on its door. */
+export type Fit = Record<SlotId, Rung> & { doorNumber: number };
+export const defaultFit = (): Fit => ({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: DEFAULT_DOOR_NUMBER });

@@ -122,6 +122,14 @@ function partSvg(slot: SlotId, r: Rung): string {
       }
       return s + '<path d="M14,90 L24,62 L76,62 L86,90Z" fill="#8d96a3" stroke="#111" stroke-width="4" stroke-linejoin="round"/>';
     }
+    case 'number': { // a door with a racing number on it
+      let s = '<rect x="14" y="14" width="72" height="72" rx="10" fill="#8d96a3" stroke="#111" stroke-width="4"/><rect x="66" y="46" width="12" height="5" rx="2" fill="#24272c"/>';
+      if (r === 0) return s;
+      const num = (fill: string, stroke: string, w: number) => `<text x="42" y="70" text-anchor="middle" font-family="Bungee,sans-serif" font-size="44" fill="${fill}" stroke="${stroke}" stroke-width="${w}" stroke-linejoin="round" paint-order="stroke">7</text>`;
+      if (r === 3) s += '<path d="M30,34 C26,26 30,18 34,10 C36,18 42,20 40,30 C46,24 46,16 46,12 C54,22 54,30 50,36Z" fill="#ff6a00"/><path d="M36,34 C34,28 36,24 38,20 C40,26 44,28 42,34Z" fill="#ffe14d"/>';
+      if (r === 4) s += '<ellipse cx="42" cy="54" rx="26" ry="26" fill="#ffd23f" opacity=".35"/>';
+      return s + (r === 1 ? num('#fff', '#16181c', 3) : r === 2 ? `${num('none', '#e63946', 12)}${num('#fff', '#111', 6)}` : r === 3 ? num('url(#mtm-fire)', '#111', 4) : num('url(#mtm-gold)', '#6a4a00', 3));
+    }
   }
 }
 

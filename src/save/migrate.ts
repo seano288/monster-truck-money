@@ -1,6 +1,6 @@
 // Save migrations are pure: raw JSON in, a current Save out. Anything that isn't a save starts fresh,
 // and a save's missing or broken fields fall back to their fresh values.
-import { ALL_BUYABLES, ALL_MODS, BODY_IDS, bodyOf, defaultFit, isBodyItem, isLegendary, isStarter, SLOTS, STARTER_BODIES, type BodyId, type Buyable, type Fit, type ModId, type Rung } from '../garage/catalog';
+import { ALL_BUYABLES, ALL_MODS, BODY_IDS, bodyOf, defaultFit, isBodyItem, isDoorNumber, isLegendary, isStarter, SLOTS, STARTER_BODIES, type BodyId, type Buyable, type Fit, type ModId, type Rung } from '../garage/catalog';
 import { MODE_IDS, type Level, type ModeId } from '../modes/ids';
 import { backfill, dayOf, STEP_IDS, type Earned } from '../trophies/trophies';
 
@@ -28,7 +28,7 @@ export interface Save {
   body: BodyId | null;
   /** The starter Bodies and the ones he bought with Bolts. */
   ownedBodies: BodyId[];
-  /** The Mods fitted on each Body. */
+  /** The Mods fitted on each Body, and the number on its door. */
   fitted: Record<BodyId, Fit>;
   /** Unlocked Mods, shared across Bodies. */
   unlocked: ModId[];
@@ -91,6 +91,7 @@ function readFit(raw: unknown, unlocked: readonly ModId[]): Fit {
     const r = raw[id];
     if (r === 0 || ((r === 1 || r === 2 || r === 3 || r === 4) && unlocked.includes(`${id}:${r}`))) f[id] = r as Rung;
   }
+  if (isDoorNumber(raw.doorNumber)) f.doorNumber = raw.doorNumber; // a save from before the Door Number reads as 1
   return f;
 }
 

@@ -9,7 +9,7 @@ import { POINT_SCALE, PUFF } from './exhaust';
 import { buildTruck, type BuiltTruck } from './truck';
 
 // Camera per Slot when its sheet opens: [x, z] direction from the Truck, polar angle
-const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35], exhaust: [-1, 0.9, 1.1], topper: [-0.7, 1, 0.85] };
+const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35], exhaust: [-1, 0.9, 1.1], topper: [-0.7, 1, 0.85], number: [0.25, 1, 1.3] };
 export const IDLE_SPIN_MS = 12000;
 /** How long a Dragon Jaw snap takes: two chomps. */
 const SNAP_MS = 700;
@@ -111,10 +111,15 @@ export class GarageStage {
     this.raf = requestAnimationFrame(this.loop);
   }
 
-  /** Show this Body with these Mods fitted (rebuilt only when something changed). A newly fitted Exhaust puffs. */
+  /** Show this Body with these Mods fitted (rebuilt only when something changed, and just repainted for a new Door Number). A newly fitted Exhaust puffs. */
   setTruck(body: BodyId, fit: Fit) {
     const sig = body + JSON.stringify(fit);
     if (sig === this.sig) return;
+    if (this.truck && this.fitted?.body === body && this.sig === body + JSON.stringify({ ...fit, doorNumber: this.fitted.fit.doorNumber })) { // only the Door Number changed
+      this.truck.setDoorNumber(fit.doorNumber);
+      this.sig = sig; this.fitted = { body, fit: { ...fit } };
+      return;
+    }
     if (this.fitted?.body === body && this.fitted.fit.exhaust !== fit.exhaust) this.puff();
     this.sig = sig; this.fitted = { body, fit: { ...fit } };
     if (this.truck) { this.turntable.remove(this.truck.group, this.truck.exhaust.points); this.truck.dispose(); }
@@ -263,6 +268,7 @@ export class GarageStage {
         lamps.forEach((m, i) => { m.emissiveIntensity = i === k ? 5 : 1.2; });
         light.color.setHex(k ? 0x1a6bff : 0xff1a1a); light.intensity = 2 + 2.5 * Math.abs(Math.sin(now / 70));
       }
+      if (t.anim.goldNumber) t.anim.goldNumber.emissiveIntensity = 0.7 + 0.35 * Math.sin(now / 280);
       t.anim.repaint?.(now);
       this.placeHotspots(t);
     }

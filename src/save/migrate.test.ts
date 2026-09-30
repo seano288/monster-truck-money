@@ -63,8 +63,8 @@ describe('migrate: version 1 to 2', () => {
 
   it('gives the new Bodies default fits', () => {
     const s = migrate({ version: 1 });
-    expect(s.fitted.firetruck).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
-    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
+    expect(s.fitted.firetruck).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
+    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
   });
 
   it('shows the Legendaries locked', () => {
@@ -105,7 +105,7 @@ describe('migrate: the Engine Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(9);
     expect(s.unlocked).toEqual(['horn:3', 'horn:4']);
-    expect(s.fitted.pickup).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 4, engine: 0, grille: 0, exhaust: 0, topper: 0 });
+    expect(s.fitted.pickup).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 4, engine: 0, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
   });
 
   it('keeps an Engine Mod he unlocked and fitted', () => {
@@ -121,7 +121,7 @@ describe('migrate: the Grille Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(12);
     expect(s.unlocked).toEqual(['tires:2', 'paint:1', 'lights:3', 'engine:1']);
-    expect(s.fitted.jeep).toEqual({ tires: 2, paint: 1, decals: 0, lights: 3, horn: 0, engine: 1, grille: 0, exhaust: 0, topper: 0 });
+    expect(s.fitted.jeep).toEqual({ tires: 2, paint: 1, decals: 0, lights: 3, horn: 0, engine: 1, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
     expect(s.fitted.pickup.grille).toBe(0);
   });
 
@@ -138,7 +138,7 @@ describe('migrate: the Exhaust Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(7);
     expect(s.unlocked).toEqual(['grille:3', 'grille:4', 'tires:1']);
-    expect(s.fitted.racecar).toEqual({ tires: 1, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 4, exhaust: 0, topper: 0 });
+    expect(s.fitted.racecar).toEqual({ tires: 1, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 4, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
     expect(s.fitted.pickup.exhaust).toBe(0);
   });
 
@@ -155,13 +155,33 @@ describe('migrate: the Roof Topper Slot', () => {
     expect(s.version).toBe(SAVE_VERSION);
     expect(s.bolts).toBe(3);
     expect(s.unlocked).toEqual(['exhaust:1', 'lights:2']);
-    expect(s.fitted.police).toEqual({ tires: 0, paint: 0, decals: 0, lights: 2, horn: 0, engine: 0, grille: 0, exhaust: 1, topper: 0 });
+    expect(s.fitted.police).toEqual({ tires: 0, paint: 0, decals: 0, lights: 2, horn: 0, engine: 0, grille: 0, exhaust: 1, topper: 0, number: 0, doorNumber: 1 });
     expect(s.fitted.pickup.topper).toBe(0);
   });
 
   it('keeps a Roof Topper he unlocked and fitted', () => {
     const s = migrate({ version: SAVE_VERSION, unlocked: ['topper:4'], fitted: { racecar: { topper: 4 } } });
     expect(s.fitted.racecar.topper).toBe(4);
+  });
+});
+
+describe('migrate: the Door Number', () => {
+  it('loads a save from before the Door Number with its fits kept, no number style fitted and number 1 on every door', () => {
+    const old = { version: SAVE_VERSION, unlocked: ['topper:2'], fitted: { jeep: { tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 2 } } };
+    const s = migrate(old);
+    expect(s.fitted.jeep).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 2, number: 0, doorNumber: 1 });
+    expect(s.fitted.pickup.doorNumber).toBe(1);
+  });
+
+  it('keeps a different number on each Body', () => {
+    const s = migrate({ version: SAVE_VERSION, unlocked: ['number:2'], fitted: { pickup: { number: 2, doorNumber: 42 }, bigfoot: { doorNumber: 7 }, racecar: { doorNumber: 0 } } });
+    expect([s.fitted.pickup.doorNumber, s.fitted.bigfoot.doorNumber, s.fitted.racecar.doorNumber, s.fitted.jeep.doorNumber]).toEqual([42, 7, 0, 1]);
+    expect(s.fitted.pickup.number).toBe(2);
+  });
+
+  it('reads a number that is not 0 to 99 as 1', () => {
+    const s = migrate({ version: SAVE_VERSION, fitted: { pickup: { doorNumber: 100 }, bigfoot: { doorNumber: -1 }, dragster: { doorNumber: 4.5 }, jeep: { doorNumber: '42' }, police: { doorNumber: 99 } } });
+    expect([s.fitted.pickup, s.fitted.bigfoot, s.fitted.dragster, s.fitted.jeep, s.fitted.police].map(f => f.doorNumber)).toEqual([1, 1, 1, 1, 99]);
   });
 });
 
@@ -177,9 +197,9 @@ describe('migrate: the second batch of Bodies', () => {
     expect(s.body).toBe('jeep');
     expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'jeep']);
     expect(s.goal).toBe('body:firetruck');
-    expect(s.fitted.jeep).toEqual({ tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
+    expect(s.fitted.jeep).toEqual({ tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
     for (const b of ['towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const) {
-      expect(s.fitted[b]).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0 });
+      expect(s.fitted[b]).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0, grille: 0, exhaust: 0, topper: 0, number: 0, doorNumber: 1 });
     }
   });
 

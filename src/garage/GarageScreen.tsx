@@ -1,7 +1,9 @@
 // The Garage: "Tap the truck". The 3D Truck fills the stage with a hotspot on each Slot's part; tapping one
 // swings the camera there and opens that Slot's sheet of 5 Mods (bottom sheet in portrait, side panel in landscape).
 // Along the bottom, the Body switcher shows every Body, the locked ones with their Bolt price; it scrolls, and keeps
-// the Body he's driving in view. 📸 Show Off puts the Truck on stage, and 🏆 opens the Trophy Shelf.
+// the Body he's driving in view. 📸 Show Off puts the Truck on stage, and 🏆 opens the Trophy Shelf. Once a Door
+// Number style is fitted, its sheet has a button that swaps the Mods for two wheels to pick the number with. Its
+// hotspot steps away while the sheet is open, and every hotspot does while he picks, so none covers the number.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { ENGINES, HORNS, sClink, sNope } from '../audio/sfx';
@@ -11,13 +13,15 @@ import { fmt } from '../money/money';
 import { startRound } from '../round/round';
 import { TrophyShelf } from '../trophies/TrophyShelf';
 import { Bolt, BoltPile, IconButton } from '../ui/bits';
+import { numberLine } from '../voice/phrases';
 import { say } from '../voice/say';
 import { BodyArt } from './BodyArt';
 import { bodyItem, BODY_IDS, BODY_NAMES, isStarter, LEGENDARY, modId, modName, RUNGS, SLOTS, slotById, TOP, type BodyId, type Rung, type SlotId } from './catalog';
 import { Checkout } from './Checkout';
+import { digits, turnWheel, type Wheel } from './doorNumber';
 import { CASH_PRICES, PRICES } from './economy';
 import {
-  buyLegendary, canAfford, canAffordBody, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, owns, slotHasAffordable,
+  buyLegendary, canAfford, canAffordBody, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, owns, setDoorNumber, slotHasAffordable,
   stepBody, tapBody, tapMod, waitingFor, waitLines,
 } from './garage';
 import { GoalBar } from './GoalBar';
@@ -31,12 +35,14 @@ export function GarageScreen() {
   const hots = useRef<Partial<Record<SlotId, HTMLButtonElement | null>>>({});
   const [stage, setStage] = useState<GarageStage | null>(null);
   const [sheet, setSheet] = useState<SlotId | null>(null);
+  const [picking, setPicking] = useState(false);
   const [checkout, setCheckout] = useState<SlotId | null>(null);
   const [showing, setShowing] = useState(false);
   const [shelf, setShelf] = useState(false);
   const [wiggle, setWiggle] = useState<string | null>(null);
   const [blocked, setBlocked] = useState(false); // only for the length of an unlock jump
   const body = currentBody(), f = currentFit();
+  const canPick = sheet === 'number' && f.number > 0, picker = picking && canPick;
 
   useEffect(() => {
     // three.js is in the main bundle, not a lazy chunk: an update can't leave the Garage pointing at a chunk that's gone
@@ -59,14 +65,22 @@ export function GarageScreen() {
   useEffect(() => { strip.current?.querySelector('.on')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }, [body, showing]);
 
   function openSheet(slot: SlotId) {
-    setSheet(slot);
+    setSheet(slot); setPicking(false);
     stage?.focus(slot);
     if (slot === 'horn') HORNS[f.horn]!();
     if (slot === 'engine') { ENGINES[f.engine]!(); stage?.puff(); } // he revs it
     if (slot === 'exhaust') stage?.puff();
     void say(slotById(slot).name);
   }
-  function closeSheet() { setSheet(null); stage?.focus(null); }
+  function closeSheet() { setSheet(null); setPicking(false); stage?.focus(null); }
+
+  function openPicker() { setPicking(true); void say(numberLine(f.doorNumber)); }
+  function turn(wheel: Wheel, dir: 1 | -1) {
+    const n = turnWheel(f.doorNumber, wheel, dir);
+    setDoorNumber(n);
+    sClink();
+    void say(numberLine(n));
+  }
 
   function block(ms: number) {
     setBlocked(true);
@@ -142,7 +156,7 @@ export function GarageScreen() {
             <button class="arrow l" aria-label="Previous truck" onClick={() => bodyStep(-1)}>◀</button>
             <button class="arrow r" aria-label="Next truck" onClick={() => bodyStep(1)}>▶</button>
             {SLOTS.map(s => (
-              <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${sheet === s.id ? 'on' : ''} ${slotHasAffordable(s.id) ? 'aff' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
+              <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${picker || (sheet === s.id && s.id === 'number') ? 'away' : sheet === s.id ? 'on' : ''} ${slotHasAffordable(s.id) ? 'aff' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
             ))}
             <div class="bodystrip" ref={strip}>
               {BODY_IDS.map(b => {
@@ -163,8 +177,24 @@ export function GarageScreen() {
       </div>
       {sheet && !showing && (
         <div class="sheet">
-          <div class="sheethead"><span>{slotById(sheet).icon}</span>{slotById(sheet).name}<button class="x" aria-label="Close" onClick={closeSheet}>✕</button></div>
-          <div class="sheettiles">
+          <div class="sheethead">
+            <span>{slotById(sheet).icon}</span>{slotById(sheet).name}
+            {canPick && (picker
+              ? <button class="numpick done" aria-label="Done" onClick={() => setPicking(false)}>✓</button>
+              : <button class="numpick" aria-label="Pick your number" onClick={openPicker}>{f.doorNumber}</button>)}
+            <button class="x" aria-label="Close" onClick={closeSheet}>✕</button>
+          </div>
+          {picker ? (
+            <div class="numwheels">
+              {([['tens', digits(f.doorNumber)[0]], ['ones', digits(f.doorNumber)[1]]] as const).map(([w, d]) => (
+                <div key={w} class="numwheel">
+                  <button aria-label={`${w} up`} onClick={() => turn(w, 1)}>▲</button>
+                  <div class="digit">{d}</div>
+                  <button aria-label={`${w} down`} onClick={() => turn(w, -1)}>▼</button>
+                </div>
+              ))}
+            </div>
+          ) : <div class="sheettiles">
             {([0, ...RUNGS] as const).map(r => {
               const un = isUnlocked(sheet, r), fitted = f[sheet] === r, legend = r === LEGENDARY;
               if (legend) {
@@ -192,7 +222,7 @@ export function GarageScreen() {
                 </button>
               );
             })}
-          </div>
+          </div>}
         </div>
       )}
       {shelf && <TrophyShelf onClose={() => setShelf(false)} />}

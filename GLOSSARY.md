@@ -25,6 +25,8 @@ _Avoid_: Category, part type
 **Rung**: A Mod's step within its Slot: first, second, top, then Legendary. A higher Rung looks cooler and costs more. The first three are paid in Bolts; the Legendary Rung is paid in money, tapped into the Pay the Shop tray to the exact price, and opens for purchase once the top Rung in its Slot is unlocked. Each Slot also has a free default that is not a Rung.
 _Avoid_: Tier, level (Level means how hard a Game Mode is)
 
+**Door Number**: The racing number on the Truck's door, 0 to 99, which the player picks himself with two wheels (tens and ones) while it is read aloud. Each Body keeps its own number, and changing it is always free. It is not a Mod: the Door Number Slot's Mods are only its style (Plain, Outlined, Flaming, Glowing Gold), and with No Number fitted it isn't shown.
+
 **Goal**: The one locked Mod or locked Body the player is saving Bolts toward, shown as a progress bar while they play. It is the cheapest one unless the player taps another locked Mod or Body to choose it. A Legendary is never the Goal, because it is bought with money.
 
 **Garage**: Where the Truck is built. It shows the Truck, the Mods already unlocked and the Mods still to unlock, each with its Bolt cost (or money price, for a Legendary), and the Bodies owned and still to buy.
