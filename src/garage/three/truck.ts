@@ -2,7 +2,7 @@
 // a clear-coat, one canvas texture for Paint and Decals projected from the side, a tube chassis with 4-link
 // suspension and coil-overs, lathe-turned tires with tread that grows per Mod, beadlock rims, and per-Body extras.
 // The Legendaries (Rung 4) go a step past the top Rung: gold spiked paddle tires, flaked gold paint, a skull with
-// wings, spinning lasers and a roof-top train horn.
+// wings, spinning lasers, a roof-top train horn and a gold dragon jaw that chomps.
 // Ported from the "3D Garage" prototype (prototype/garage-screen @ 9780a65).
 import * as THREE from 'three';
 import type { BodyId, Fit, SlotId } from '../catalog';
@@ -95,6 +95,8 @@ export interface TruckAnim {
   glow: { m: THREE.MeshBasicMaterial; l: THREE.PointLight } | null;
   /** Rainbow Chrome paint shimmers and Gold Flake twinkles, so its canvas is redrawn each frame. */
   repaint: ((t: number) => void) | null;
+  /** Dragon Jaw: the lower jaw swings on its hinge and the fire inside flickers. */
+  jaw: { hinge: THREE.Object3D; fire: THREE.MeshStandardMaterial } | null;
 }
 
 export interface BuiltTruck {
@@ -114,7 +116,7 @@ class Builder {
   readonly own: THREE.Material[] = [];
   readonly truck = new THREE.Group();
   readonly body = new THREE.Group();
-  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null };
+  readonly anim: TruckAnim = { spin: [], lasers: null, glow: null, repaint: null, jaw: null };
 
   constructor(readonly bodyId: BodyId, readonly f: Fit) {
     this.B = BODIES[bodyId];
@@ -236,9 +238,8 @@ class Builder {
   }
   details(fx: number, headY: number) {
     const { B, W, ch, body, bodyId } = this, bw = toX(B.back) - SH.bs, fw = fx + 0.05, ext = W / 2 + SH.bt;
-    body.add(this.cyl(0.065, 0.065, W + 0.28, M.chrome, fw + 0.06, 0.08, 0, 'z'), this.cyl(0.065, 0.065, W + 0.28, M.chrome, bw - 0.06, 0.08, 0, 'z')); // tube bumpers
-    body.add(this.box(0.03, 0.19, W * 0.38, M.dark, fw + 0.012, headY, 0));
-    for (let i = 0; i < 7; i++) body.add(this.box(0.02, 0.17, 0.016, M.chrome, fw + 0.03, headY, (i - 3) * W * 0.052)); // grille
+    if (!this.mouth) body.add(this.cyl(0.065, 0.065, W + 0.28, M.chrome, fw + 0.06, 0.08, 0, 'z')); // tube bumpers; a mouth takes the front one's place
+    body.add(this.cyl(0.065, 0.065, W + 0.28, M.chrome, bw - 0.06, 0.08, 0, 'z'));
     const [mx, my] = B.shield[1];
     const tail = this.glow(0xff1a1a, 2.2);
     for (const s of [-1, 1]) {
@@ -332,6 +333,73 @@ class Builder {
     }
   }
 
+  // --- Grille Mods, on the front edge between the headlights ---
+  /** Shark Teeth and Dragon Jaw are mouths: they take the front tube bumper's place. */
+  get mouth() { return this.f.grille >= 3; }
+  /** The front face a Grille Mod above Plain fills: bottom and top y, and half its width. Chrome Bars and Bull Bar sit
+   *  above the tube bumper, standing proud of a short nose; a mouth has no bumper and goes lower. */
+  grilleBox(headY: number) {
+    const top = toY(Math.min(...parsePath(this.B.path)[0]!.filter(([x]) => x === this.B.front).map(([, y]) => y)));
+    const y0 = Math.max(this.mouth ? 0.05 : 0.15, headY - 0.16);
+    return { y0, y1: Math.max(y0 + 0.13, Math.min(top - 0.03, headY + 0.14)), hw: this.W * 0.32 - 0.12 };
+  }
+  grille(fx: number, headY: number) {
+    const { body } = this, rung = this.f.grille, fw = fx + 0.05;
+    if (rung === 0) { // Plain: thin slats on a dark panel
+      body.add(this.box(0.03, 0.19, this.W * 0.38, M.dark, fw + 0.012, headY, 0));
+      for (let i = 0; i < 7; i++) body.add(this.box(0.02, 0.17, 0.016, M.chrome, fw + 0.03, headY, (i - 3) * this.W * 0.052));
+      return;
+    }
+    const { y0, y1, hw } = this.grilleBox(headY), H = y1 - y0, yc = (y0 + y1) / 2;
+    const frame = (m: THREE.Material, t: number) => {
+      for (const y of [y0 - t / 2, y1 + t / 2]) body.add(this.box(0.05, t, 2 * hw + 2 * t, m, fw + 0.025, y, 0));
+      for (const s of [-1, 1]) body.add(this.box(0.05, H, t, m, fw + 0.025, yc, s * (hw + t / 2)));
+    };
+    const teeth = (m: THREE.Material, x: number, y: number, dir: 1 | -1, size: number, into: THREE.Object3D = body) => {
+      const n = Math.max(4, Math.round((2 * hw) / (size * 0.9)));
+      for (let i = 0; i < n; i++) {
+        const c = new THREE.Mesh(new THREE.ConeGeometry(size * 0.42, size, 4), m);
+        c.position.set(x, y + (dir * size) / 2, -hw + ((i + 0.5) / n) * 2 * hw); if (dir < 0) c.rotation.x = Math.PI; into.add(c);
+      }
+    };
+    if (rung <= 2) { // Chrome Bars: a chrome surround and thick chrome bars
+      body.add(this.box(0.03, H, 2 * hw, M.dark, fw + 0.012, yc, 0));
+      frame(M.chrome, 0.04);
+      const n = Math.max(3, Math.round(H / 0.06));
+      for (let i = 0; i < n; i++) body.add(this.cyl(0.019, 0.019, 2 * hw, M.chrome, fw + 0.04, y0 + ((i + 0.5) / n) * H, 0, 'z', 12));
+    }
+    if (rung === 2) { // Bull Bar: a chrome push bar out in front
+      const bx = fw + 0.24, bz = hw * 0.7, yt = y1 + 0.06, yb = -0.04, P = (x: number, y: number, z: number) => new V3(x, y, z);
+      for (const s of [-1, 1]) {
+        body.add(this.link(P(bx, yb, s * bz), P(bx, yt, s * bz), 0.036, M.chrome), this.link(P(bx, y1 - 0.04, s * bz), P(fw, y1 - 0.04, s * bz), 0.026, M.chrome));
+        const j = new THREE.Mesh(new THREE.SphereGeometry(0.036, 12, 8), M.chrome); j.position.set(bx, yt, s * bz); body.add(j);
+      }
+      for (const y of [yt, yc, 0.06]) body.add(this.cyl(0.03, 0.03, 2 * bz, M.chrome, bx, y, 0, 'z', 12));
+    }
+    if (rung === 3) { // Shark Teeth: a gunmetal-lipped mouth, dark red inside, full of white teeth
+      body.add(this.box(0.03, H, 2 * hw, this.glow(0x5a0010, 0.5), fw + 0.012, yc, 0));
+      frame(this.mat(std(0x2c323c, { roughness: 0.3, metalness: 0.6 })), 0.06);
+      const tooth = this.mat(std(0xffffff, { roughness: 0.25 }));
+      teeth(tooth, fw + 0.05, y1, -1, Math.min(0.1, H * 0.42)); teeth(tooth, fw + 0.05, y0, 1, Math.min(0.1, H * 0.42));
+    }
+    if (rung === 4) { // Dragon Jaw: a gold jaw with fire inside, gold horns, and a lower jaw that chomps
+      const fire = this.glow(0xff2200, 0.9), ivory = this.mat(std(0xfff4d0, { roughness: 0.3 })), sz = Math.min(0.11, H * 0.45);
+      body.add(this.box(0.03, H, 2 * hw, fire, fw + 0.012, yc, 0), this.box(0.032, H * 0.22, hw * 0.9, this.glow(0xffa000, 1.4), fw + 0.02, yc, 0));
+      body.add(this.box(0.08, 0.06, 2 * hw + 0.12, M.gold, fw + 0.04, y1 + 0.03, 0));
+      for (const s of [-1, 1]) {
+        body.add(this.box(0.08, H + 0.06, 0.06, M.gold, fw + 0.04, yc + 0.03, s * (hw + 0.03)));
+        const horn = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.24, 12), M.gold);
+        horn.position.set(fw + 0.02, y1 + 0.14, s * (hw + 0.02)); horn.rotation.set(s * 0.55, 0, 0.35); body.add(horn);
+        const fang = new THREE.Mesh(new THREE.ConeGeometry(0.03, sz * 1.5, 6), ivory); fang.rotation.x = Math.PI; fang.position.set(fw + 0.08, y1 - sz * 0.75, s * (hw - 0.04)); body.add(fang);
+      }
+      teeth(ivory, fw + 0.07, y1, -1, sz);
+      const hinge = new THREE.Group(); hinge.position.set(fw, y0, 0); body.add(hinge);
+      hinge.add(this.box(0.2, 0.07, 2 * hw + 0.12, M.gold, 0.1, -0.035, 0));
+      teeth(ivory, 0.13, 0, 1, sz, hinge);
+      this.anim.jaw = { hinge, fire };
+    }
+  }
+
   // --- Horn Mods: only the Train Horn shows, as three chrome trumpets on the roof ---
   horn() {
     if (this.f.horn !== 4) return;
@@ -357,6 +425,7 @@ class Builder {
       const wh = this.wheel(f.tires, r, tw); wh.position.set(wx, r, s * zW); this.truck.add(wh);
       if (f.tires >= 3) this.anim.spin.push(wh);
     }
+    this.grille(fx, headY);
     this.lights(fx, headY, w0, w1);
     this.horn();
     this.truck.traverse(o => { if (o instanceof THREE.Mesh) o.castShadow = !(o.material as THREE.Material).transparent; });
@@ -373,6 +442,7 @@ class Builder {
           lights: { p: new V3(toX(B.front) + 0.14, ch + toY(B.head[1]), 0), n: new V3(1, 0, 0), min: -0.15 },
           horn: { p: new V3(toX(B.hot.horn[0]), ch + toY(B.hot.horn[1]), 0), n: null, min: 0 },
           engine: { p: new V3(toX(B.hot.engine[0]), ch + toY(B.hot.engine[1]), 0), n: null, min: 0 },
+          grille: { p: new V3(toX(B.front) + 0.14, ch + Math.max(0.05, headY - 0.16), 0), n: new V3(1, 0, 0), min: -0.15 }, // below Lights, the same for every Rung
         };
       },
       dispose: () => {

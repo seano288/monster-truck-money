@@ -9,13 +9,13 @@ describe('prices', () => {
     expect([priceOf('paint:1'), priceOf('paint:2'), priceOf('paint:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
   });
 
-  it('adds up to 300 Bolts for the 18 Bolt Mods', () => {
+  it('adds up to 350 Bolts for the 21 Bolt Mods', () => {
     const boltMods = ALL_MODS.filter(m => !isLegendary(m));
-    expect(boltMods).toHaveLength(18);
-    expect(boltMods.reduce((n, m) => n + (priceOf(m).bolts ?? 0), 0)).toBe(300);
+    expect(boltMods).toHaveLength(21);
+    expect(boltMods.reduce((n, m) => n + (priceOf(m).bolts ?? 0), 0)).toBe(350);
   });
 
-  it('prices the Legendaries in money, from $1.35 to $4.80', () => {
+  it('prices the Tires, Paint, Decals, Lights and Horn Legendaries in money, from $1.35 to $4.80', () => {
     expect(['tires:4', 'paint:4', 'decals:4', 'lights:4', 'horn:4'].map(m => priceOf(m as 'tires:4'))).toEqual([
       { cents: 135 }, { cents: 210 }, { cents: 275 }, { cents: 360 }, { cents: 480 },
     ]);
@@ -24,6 +24,11 @@ describe('prices', () => {
   it('prices the Engine Legendary, Rocket, at $3.95', () => {
     expect(priceOf('engine:4')).toEqual({ cents: 395 });
     expect([priceOf('engine:1'), priceOf('engine:2'), priceOf('engine:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+  });
+
+  it('prices the Grille Legendary, Dragon Jaw, at $2.45', () => {
+    expect(priceOf('grille:4')).toEqual({ cents: 245 });
+    expect([priceOf('grille:1'), priceOf('grille:2'), priceOf('grille:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
   });
 
   it('costs 50, 75 and 100 Bolts for the new Bodies', () => {
@@ -99,7 +104,8 @@ describe('the Goal', () => {
   it('defaults to the cheapest locked Mod', () => {
     expect(goalOf(wallet())).toBe('tires:1');
     expect(goalOf(wallet({ unlocked: ['tires:1', 'paint:1', 'decals:1', 'lights:1', 'horn:1'] }))).toBe('engine:1');
-    expect(goalOf(wallet({ unlocked: ['tires:1', 'paint:1', 'decals:1', 'lights:1', 'horn:1', 'engine:1'] }))).toBe('tires:2');
+    expect(goalOf(wallet({ unlocked: ['tires:1', 'paint:1', 'decals:1', 'lights:1', 'horn:1', 'engine:1'] }))).toBe('grille:1');
+    expect(goalOf(wallet({ unlocked: ['tires:1', 'paint:1', 'decals:1', 'lights:1', 'horn:1', 'engine:1', 'grille:1'] }))).toBe('tires:2');
   });
 
   it('is the Mod or Body he chose while it is still locked', () => {
@@ -130,6 +136,7 @@ describe('the Goal', () => {
     expect(builtEverything(wallet({ unlocked: [...ALL_MODS] }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies }))).toBe(true);
     expect(builtEverything(wallet({ unlocked: ALL_MODS.filter(m => !m.startsWith('engine:')), ownedBodies: bodies }))).toBe(false);
+    expect(builtEverything(wallet({ unlocked: ALL_MODS.filter(m => m !== 'grille:4'), ownedBodies: bodies }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies.filter(b => b !== 'racecar') }))).toBe(false);
     expect(builtEverything(wallet())).toBe(false);
   });
@@ -143,7 +150,7 @@ describe('the Goal', () => {
 
 describe('affordable', () => {
   it('lists the locked Mods and Bodies he has enough Bolts for, never a Legendary', () => {
-    expect(affordable(wallet({ bolts: 15, unlocked: ['tires:1'] }))).toEqual(['tires:2', 'paint:1', 'paint:2', 'decals:1', 'decals:2', 'lights:1', 'lights:2', 'horn:1', 'horn:2', 'engine:1', 'engine:2']);
+    expect(affordable(wallet({ bolts: 15, unlocked: ['tires:1'] }))).toEqual(['tires:2', 'paint:1', 'paint:2', 'decals:1', 'decals:2', 'lights:1', 'lights:2', 'horn:1', 'horn:2', 'engine:1', 'engine:2', 'grille:1', 'grille:2']);
     expect(affordable(wallet({ bolts: 4 }))).toEqual([]);
     expect(affordable(wallet({ bolts: 50, unlocked: ALL_MODS.filter(m => !isLegendary(m)) }))).toEqual(['body:firetruck']);
   });
@@ -152,7 +159,8 @@ describe('affordable', () => {
 describe('the next Legendary', () => {
   it('is the cheapest one still to buy, whether or not it is waiting', () => {
     expect(nextLegendary(wallet())).toBe('tires');
-    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'paint:4'] }))).toBe('decals');
+    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'paint:4'] }))).toBe('grille');
+    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'grille:4', 'paint:4'] }))).toBe('decals');
     expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary) }))).toBeNull();
   });
 });

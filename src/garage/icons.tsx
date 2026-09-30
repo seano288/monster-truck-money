@@ -66,6 +66,29 @@ function partSvg(slot: SlotId, r: Rung): string {
       for (let i = 0; i < pipes; i++) { const x = 50 - (pipes - 1) * 8 + i * 16; s += `<rect x="${x - 5}" y="20" width="10" height="26" rx="3" fill="${c}" stroke="#111" stroke-width="3"/>`; }
       return s + (r === 0 ? '<circle cx="66" cy="16" r="6" fill="#ccc" opacity=".8"/>' : '');
     }
+    case 'grille': {
+      const teeth = (y: number, dir: 1 | -1, n: number, x0: number, x1: number, c: string) => {
+        const w = (x1 - x0) / n; let s = '';
+        for (let i = 0; i < n; i++) s += `<polygon points="${x0 + i * w},${y} ${x0 + (i + 1) * w},${y} ${x0 + (i + 0.5) * w},${y + dir * w * 1.3}" fill="${c}" stroke="#111" stroke-width="2" stroke-linejoin="round"/>`;
+        return s;
+      };
+      if (r === 4) { // a gold dragon jaw, open, with fire inside and horns
+        return '<path d="M16,30 L4,6 L30,24Z M84,30 L96,6 L70,24Z" fill="#ffc21a" stroke="#111" stroke-width="3" stroke-linejoin="round"/>'
+          + '<rect x="12" y="24" width="76" height="60" rx="12" fill="#ffc21a" stroke="#111" stroke-width="4"/><rect x="20" y="36" width="60" height="36" rx="6" fill="#ff6a00"/><ellipse cx="50" cy="56" rx="22" ry="10" fill="#ffe14d"/>'
+          + teeth(36, 1, 5, 20, 80, '#fff8dc') + teeth(72, -1, 5, 20, 80, '#fff8dc');
+      }
+      if (r === 3) { // a black mouth full of white shark teeth
+        return '<rect x="10" y="26" width="80" height="52" rx="14" fill="#d9dde3" stroke="#111" stroke-width="4"/><rect x="18" y="34" width="64" height="36" rx="8" fill="#5a0010"/>'
+          + teeth(34, 1, 6, 18, 82, '#fff') + teeth(70, -1, 6, 18, 82, '#fff');
+      }
+      // a grille that grows: thin dark slats, then thick chrome bars, then a chrome bull bar in front
+      let s = `<rect x="18" y="30" width="64" height="40" rx="6" fill="#1e2126" stroke="${r ? '#e8e8e8' : '#111'}" stroke-width="${r ? 7 : 4}"/>`;
+      if (r === 0) for (let i = 0; i < 6; i++) s += `<rect x="${27 + i * 9}" y="36" width="3" height="28" fill="#8d96a3"/>`;
+      else for (let i = 0; i < 4; i++) s += `<rect x="24" y="${36 + i * 8}" width="52" height="5" rx="2" fill="#e8e8e8"/>`;
+      const bar = 'd="M24,90 L24,24 Q24,12 36,12 L64,12 Q76,12 76,24 L76,90 M24,52 L76,52" fill="none" stroke-linejoin="round"';
+      if (r === 2) s += `<path ${bar} stroke="#111" stroke-width="10"/><path ${bar} stroke="#c8ced6" stroke-width="6"/>`;
+      return s;
+    }
   }
 }
 

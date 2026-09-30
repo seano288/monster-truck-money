@@ -8,8 +8,10 @@ import type { BodyId, Fit, SlotId } from '../catalog';
 import { buildTruck, type BuiltTruck } from './truck';
 
 // Camera per Slot when its sheet opens: [x, z] direction from the Truck, polar angle
-const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1] };
+const VIEWS: Record<SlotId, [number, number, number]> = { tires: [0.5, 1, 1.32], paint: [0.8, 1, 1.12], decals: [0, 1, 1.3], lights: [1, 0.4, 1.3], horn: [1, 0.7, 0.95], engine: [1, 0.3, 1], grille: [1, 0.15, 1.35] };
 export const IDLE_SPIN_MS = 12000;
+/** How long a Dragon Jaw snap takes: two chomps. */
+const SNAP_MS = 700;
 
 /** The Truck's moves: a hop, a spin jump and a big double-spin jump. */
 export const MOVES = { hop: { dur: 600, h: 0.35, spin: 0 }, jump: { dur: 1300, h: 1.1, spin: 1 }, mega: { dur: 2100, h: 1.9, spin: 2 } } as const;
@@ -45,6 +47,7 @@ export class GarageStage {
   private lastTouch = performance.now();
   private off = { x: 0, y: 0 };
   private move: { kind: Move; t0: number } | null = null;
+  private snapAt = -Infinity;
   private raf = 0;
   private sheetOpen = false;
   private resizeObs: ResizeObserver;
@@ -125,6 +128,9 @@ export class GarageStage {
 
   /** Play one of the Truck's jumps. */
   play(kind: Move) { this.move = { kind, t0: performance.now() }; }
+
+  /** A Dragon Jaw snaps shut twice (nothing happens without one). */
+  snap() { this.snapAt = performance.now(); }
 
   /** Show Off: the lights dim, a spotlight falls on the Truck and the turntable spins slowly. Off puts the Garage back. */
   show(on: boolean) {
@@ -229,6 +235,11 @@ export class GarageStage {
       for (const w of t.anim.spin) w.rotation.z -= 0.06;
       if (t.anim.lasers) t.anim.lasers.rotation.y = now / 700;
       if (t.anim.glow) { const p = 0.65 + 0.35 * Math.sin(now / 220); t.anim.glow.m.opacity = p; t.anim.glow.l.intensity = 4 * p; }
+      if (t.anim.jaw) {
+        const k = (now - this.snapAt) / SNAP_MS;
+        t.anim.jaw.hinge.rotation.z = -(k < 1 ? 0.75 * Math.abs(Math.sin(k * Math.PI * 2)) : 0.07 + 0.05 * Math.sin(now / 500));
+        t.anim.jaw.fire.emissiveIntensity = 0.9 + 0.35 * Math.sin(now / 90) * Math.sin(now / 37);
+      }
       t.anim.repaint?.(now);
       this.placeHotspots(t);
     }

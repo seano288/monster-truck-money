@@ -1,6 +1,6 @@
 // Show Off: his Truck on stage, full screen. The lights dim, a spotlight falls on it, the turntable spins and the
-// crowd cheers with his Engine and Horn. Tapping the Truck makes it hop, jump or mega-jump with the horn, so he
-// can perform it for someone. ✕ goes back to the Garage.
+// crowd cheers with his Engine and Horn. Tapping the Truck makes it hop, jump or mega-jump with the horn (and a
+// Dragon Jaw snap), so he can perform it for someone. ✕ goes back to the Garage.
 import { useEffect, useRef } from 'preact/hooks';
 import { ENGINES, HORNS, sCheer } from '../../audio/sfx';
 import { sparks } from '../../celebrate/effects';
@@ -37,6 +37,7 @@ export function ShowOff({ stage, canvas, stageEl, body, horn, engine, onClose }:
 
   function perform() {
     stage.play(ROUTINE[next.current++ % ROUTINE.length]!);
+    stage.snap();
     HORNS[horn]!();
     const r = stageEl.getBoundingClientRect();
     sparks(stage.truckPoint(), { w: r.width, h: r.height });
