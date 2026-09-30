@@ -7,6 +7,7 @@ import { eventLines, smallestFirst } from '../round/events';
 import type { Round, RoundEvent } from '../round/round';
 import { Money } from '../ui/Money';
 import type { Phrase } from '../voice/phrases';
+import { earnedBolts } from '../voice/phrases';
 import { say, sayMore } from '../voice/say';
 import { animate, confetti, firework, flyBolt, shake, shatter, sleep } from './effects';
 
@@ -36,20 +37,21 @@ function speak(st: ShowStage, lines: Phrase[]) {
   void sayMore(...lines);
 }
 
-/** Round done (~2.3 s): the Truck drives in with 3 Bolts in its bed, and they fly onto the pile with a clink each. */
-async function roundDone(st: ShowStage, bolts: number) {
+/** Round done (~2.3 s): the Truck drives in with the Bolts he earned in its bed, and they fly onto the pile with a clink each. */
+async function roundDone(st: ShowStage, bolts: number, earned: number) {
   sEngine(0.9);
   await animate(st.truck, [{ transform: 'translateX(-80vw)' }, { transform: 'translateX(0)' }], 900, 'cubic-bezier(.2,.8,.3,1)');
   if (!st.alive()) return;
   await animate(st.truck, [{ transform: 'rotate(0)' }, { transform: 'rotate(4deg)' }, { transform: 'rotate(0)' }], 250); // stop and rock
   sFanfare();
-  st.line(['You earned 3 Bolts!']);
-  void say('You earned 3 Bolts!');
-  const r = st.load.getBoundingClientRect();
+  const line = earnedBolts(earned);
+  st.line([line]);
+  void say(line);
+  const loaded = [...st.load.children].map(b => b.getBoundingClientRect());
   st.load.style.visibility = 'hidden';
-  let n = bolts - 3;
-  await Promise.all([0, 1, 2].map(i => sleep(i * 200)
-    .then(() => (st.alive() ? flyBolt({ x: r.left + 17 + i * 36, y: r.top + 17 }, st.pile) : undefined))
+  let n = bolts - earned;
+  await Promise.all(loaded.map((b, i) => sleep(i * 200)
+    .then(() => (st.alive() ? flyBolt({ x: b.left + b.width / 2, y: b.top + b.height / 2 }, st.pile) : undefined))
     .then(() => { if (st.alive()) { sClink(); st.bump(++n); } })));
 }
 
@@ -117,7 +119,7 @@ async function star(st: ShowStage, e: RoundEvent) {
 
 /** Plays every moment of the Round, smallest first. Resolves when the last one is done. */
 export async function playRoundShow(st: ShowStage, r: Round, bolts: number) {
-  await roundDone(st, bolts);
+  await roundDone(st, bolts, r.earned);
   for (const e of smallestFirst(r.events)) {
     if (!st.alive()) return;
     await sleep(250);

@@ -7,6 +7,7 @@ import type { RoundApi } from '../modes/mode';
 import { PayCounter } from '../modes/pay/PayCounter';
 import { fmt, MONEY_KEYS } from '../money/money';
 import { Ask } from '../round/Ask';
+import { TEACH_ON_MISS } from '../round/rules';
 import { LEGENDARY, modName, type SlotId } from './catalog';
 import { CASH_PRICES } from './economy';
 import { costLines } from './garage';
@@ -18,9 +19,8 @@ export function Checkout({ slot, onPaid, onClose }: { slot: SlotId; onPaid: (cen
   const cents = CASH_PRICES[slot], speech = costLines(slot);
   const api: RoundApi = {
     correct: () => {},
-    miss: () => { sBad(); setMisses(n => n + 1); },
+    miss: explain => { sBad(); setMisses(n => n + 1); void explain(misses + 1 >= TEACH_ON_MISS); },
     helped: () => {},
-    struggling: misses >= 1, // checked after this miss is counted: help steps in on the second
     busy: false,
   };
   return (

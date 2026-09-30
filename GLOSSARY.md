@@ -7,9 +7,9 @@ _Avoid_: Pay the Garage (it clashes with the Garage, which uses Bolts, not money
 
 **Mastery**: Getting 8 of the last 10 problems in a Game Mode right on the first try without help. It raises that Game Mode's Level.
 
-**Round**: A short run of problems in one Game Mode that ends in a reward.
+**Round**: A short run of problems in one Game Mode that ends in a reward. A problem he missed comes back once, later in the Round.
 
-**Bolt**: What the player earns by finishing Rounds and spends to unlock Mods and buy Bodies. It is deliberately *not* money, so spending it never asks the player to count cash. A Bolt never buys a Legendary Mod.
+**Bolt**: What the player earns in Rounds, one for each answer right on the first try without help plus one for finishing, and spends to unlock Mods and buy Bodies. It is deliberately *not* money, so spending it never asks the player to count cash. A Bolt never buys a Legendary Mod.
 _Avoid_: Reward Token, coin, star, point
 
 **Truck**: The player's one monster truck: a Body with Mods fitted to it. A player has one Truck at a time.

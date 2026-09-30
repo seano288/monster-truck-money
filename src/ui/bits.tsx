@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact';
 import { game } from '../game/store';
+import type { Outcome } from '../save/migrate';
 
 export function Bolt({ size }: { size: number }) {
   return (
@@ -14,8 +15,9 @@ export function BoltPile({ count = game.value.bolts }: { count?: number }) {
   return <div class="pilebox" aria-label={`${count} Bolts`}><Bolt size={34} /><span>{count}</span></div>;
 }
 
-export function Stars({ n }: { n: number }) {
-  return <div class="stars">{[0, 1, 2, 3, 4].map(i => <span key={i} class={i < n ? 'on' : ''}>⭐</span>)}</div>;
+/** One star per answered problem; one that wasn't right on the first try without help is only half lit. */
+export function Stars({ results }: { results: readonly Outcome[] }) {
+  return <div class="stars">{[0, 1, 2, 3, 4].map(i => <span key={i} class={results[i] === 'clean' ? 'on' : results[i] ? 'on half' : ''}>⭐</span>)}</div>;
 }
 
 export function LevelDots({ level }: { level: number }) {

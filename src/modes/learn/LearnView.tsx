@@ -25,17 +25,16 @@ export function LearnView({ problem: p, api }: ModeViewProps<LearnProblem>) {
   function tap(k: MoneyKey) {
     if (api.busy || done || wrong.includes(k)) return;
     if (checkLearn(p, k)) { setDone(true); return api.correct(); }
-    api.miss();
     setWrong([...wrong, k]);
-    if (api.struggling) { api.helped(); setHint(true); }
-    const t = MONEY[p.target], m = MONEY[k];
-    if ('choices' in p) void toast('Try again!', 'Try again!');
-    else if (p.kind === 'find') void toast(`That's a ${m.name}. Find the ${t.name}!`, `That's a ${m.name}.`, `Find the ${t.name}!`);
-    else {
+    api.miss(teach => {
+      if (teach) { api.helped(); setHint(true); }
+      const t = MONEY[p.target], m = MONEY[k];
+      if ('choices' in p) return toast('Try again!', 'Try again!');
+      if (p.kind === 'find') return toast(`That's a ${m.name}. Find the ${t.name}!`, `That's a ${m.name}.`, `Find the ${t.name}!`);
       const lines: Phrase[] = [moneyIs(p.target), moneyIs(k)];
       if (dimeTip(k, p.target)) lines.push('The dime is small, but it is worth more!');
-      void toast(lines.join(' '), ...lines);
-    }
+      return toast(lines.join(' '), ...lines);
+    });
   }
 
   const reveal = (k: MoneyKey) => done || hint || wrong.includes(k);

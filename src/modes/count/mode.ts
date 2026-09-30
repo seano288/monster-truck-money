@@ -1,7 +1,7 @@
 import { LEVEL_MONEY } from '../../money/money';
 import { COUNT_PHRASES } from '../../voice/phrases';
 import type { GameMode } from '../mode';
-import { checkCount, makeCount, type CountProblem } from './count';
+import { checkCount, makeCount, replayCount, type CountProblem } from './count';
 import { CountView } from './CountView';
 
 export const countMode: GameMode<CountProblem, number> = {
@@ -14,6 +14,7 @@ export const countMode: GameMode<CountProblem, number> = {
   introMoney: { 2: ['q'], 3: ['b1', 'b5'] },
   phrases: COUNT_PHRASES,
   makeProblem: makeCount,
+  replay: replayCount,
   checkAnswer: checkCount,
   View: CountView,
 };

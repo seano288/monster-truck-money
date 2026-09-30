@@ -1,7 +1,7 @@
 import { LEVEL_MONEY } from '../../money/money';
 import { LEARN_PHRASES } from '../../voice/phrases';
 import type { GameMode } from '../mode';
-import { checkLearn, makeLearn, type LearnProblem } from './learn';
+import { checkLearn, makeLearn, replayLearn, type LearnProblem } from './learn';
 import { LearnView } from './LearnView';
 
 export const learnMode: GameMode<LearnProblem, Parameters<typeof checkLearn>[1]> = {
@@ -14,6 +14,7 @@ export const learnMode: GameMode<LearnProblem, Parameters<typeof checkLearn>[1]>
   introMoney: { 2: ['q'], 3: ['b1', 'b5'] },
   phrases: LEARN_PHRASES,
   makeProblem: makeLearn,
+  replay: replayLearn,
   checkAnswer: checkLearn,
   View: LearnView,
 };

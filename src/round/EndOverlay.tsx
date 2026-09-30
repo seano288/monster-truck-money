@@ -11,7 +11,7 @@ import { leaveRound, round, startRound } from './round';
 
 export function EndOverlay() {
   const r = round.value!;
-  const [pile, setPile] = useState(game.value.bolts - 3);
+  const [pile, setPile] = useState(game.value.bolts - r.earned);
   const [bump, setBump] = useState(false);
   const [lines, setLines] = useState<Phrase[]>([]);
   const [awake, setAwake] = useState(false);
@@ -37,7 +37,7 @@ export function EndOverlay() {
         <div class="road" />
         <div class="ctruck" ref={els.truck}>
           <TruckArt color={truckColor()} />
-          <div class="load" ref={els.load}><Bolt size={34} /><Bolt size={34} /><Bolt size={34} /></div>
+          <div class="load" ref={els.load}>{Array.from({ length: r.earned }, (_, i) => <Bolt key={i} size={r.earned > 3 ? 17 : 34} />)}</div>
         </div>
       </div>
       <div class="lines">{lines.map((l, i) => <div key={i}>{l}</div>)}</div>

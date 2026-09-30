@@ -1,5 +1,7 @@
-// The Round: 5 correct answers in one Game Mode, then 3 Bolts. Each problem's result feeds the mode's
-// Mastery window, and any Level up, opened mode or star is celebrated at the end.
+// The Round: 5 correct answers in one Game Mode, then a Bolt for each one right on the first try and one for
+// finishing. A miss holds taps while it's explained, help teaches the answer after two, and a missed problem comes
+// back later. Each problem's result feeds the mode's Mastery window, and any Level up, opened mode or star is
+// celebrated at the end.
 import { signal } from '@preact/signals';
 import { sBad, sGood } from '../audio/sfx';
 import { screen } from '../app/nav';
@@ -14,9 +16,7 @@ import type { Outcome } from '../save/migrate';
 import { toast } from '../ui/toast';
 import { CHEERS } from '../voice/phrases';
 import { hush } from '../voice/say';
-
-export const ROUND_LENGTH = 5;
-export const BOLTS_PER_ROUND = 3;
+import { boltsFor, ROUND_LENGTH, takeAgain, teachNow, THINK_MS, type Again } from './rules';
 
 export type RoundEvent = { kind: 'levelUp'; mode: ModeId; level: 2 | 3 } | { kind: 'open'; mode: ModeId } | { kind: 'star'; mode: ModeId };
 
@@ -25,15 +25,25 @@ export interface Round {
   level: Level;
   /** The introduction card for the mode's new money comes before the first problem. */
   intro: boolean;
-  stars: number;
+  /** How each answered problem went: one star each. */
+  results: Outcome[];
   problem: unknown;
+  /** This problem was missed earlier in the Round, so it won't come back again. */
+  again: boolean;
+  /** Missed problems still to come back. */
+  queue: Again[];
   /** Changes with every new problem, so the mode's screen starts fresh. */
   key: number;
   firstTry: boolean;
   helped: boolean;
+  /** Misses on this problem. */
+  misses: number;
   busy: boolean;
+  /** Taps wait while a miss is explained. */
+  thinking: boolean;
   events: RoundEvent[];
   ended: boolean;
+  earned: number;
   /** The Bolts from this Round made a new Mod affordable. */
   canBuild: boolean;
 }
@@ -50,8 +60,8 @@ export function startRound(mode: ModeId) {
   const m = game.value.modes[mode];
   update(s => ({ ...s, lastMode: mode }));
   round.value = {
-    mode, level: m.level, intro: m.introPending, stars: 0, problem: modeById(mode).makeProblem(m.level, Math.random),
-    key: 0, firstTry: true, helped: false, busy: false, events: [], ended: false, canBuild: false,
+    mode, level: m.level, intro: m.introPending, results: [], problem: modeById(mode).makeProblem(m.level, Math.random), again: false, queue: [],
+    key: 0, firstTry: true, helped: false, misses: 0, busy: false, thinking: false, events: [], ended: false, earned: 0, canBuild: false,
   };
   screen.value = 'round';
 }
@@ -73,8 +83,9 @@ export function leaveRound() {
 export const isStruggling = (mode: ModeId) => struggling(game.value.modes[mode]);
 
 function nextProblem() {
-  const r = round.value!;
-  set({ problem: modeById(r.mode).makeProblem(r.level, Math.random), key: r.key + 1, firstTry: true, helped: false, busy: false });
+  const r = round.value!, m = modeById(r.mode), back = takeAgain(r.queue, r.results.length);
+  const problem = back ? m.replay(back.problem, Math.random) : m.makeProblem(r.level, Math.random);
+  set({ problem, again: !!back, queue: back ? back.rest : r.queue, key: r.key + 1, firstTry: true, helped: false, misses: 0, busy: false, thinking: false });
 }
 
 function record(r: Round, outcome: Outcome): RoundEvent[] {
@@ -94,20 +105,26 @@ function record(r: Round, outcome: Outcome): RoundEvent[] {
 
 export function correct() {
   const r = round.value;
-  if (!r || r.busy) return;
-  const clean = r.firstTry && !r.helped;
-  const events = [...r.events, ...record(r, !r.firstTry ? 'missed' : r.helped ? 'helped' : 'clean')];
-  const stars = r.stars + 1;
-  set({ stars, busy: true, events });
+  if (!r || r.busy || r.thinking) return;
+  const outcome: Outcome = !r.firstTry ? 'missed' : r.helped ? 'helped' : 'clean';
+  const events = [...r.events, ...record(r, outcome)];
+  const results = [...r.results, outcome];
+  const queue = outcome === 'missed' && !r.again ? [...r.queue, { problem: r.problem, after: results.length }] : r.queue;
+  set({ results, queue, busy: true, events });
   sGood();
-  if (stars >= ROUND_LENGTH) return later(900, endRound);
-  if (clean) { const c = pick(Math.random, CHEERS); void toast(c, c); }
+  if (results.length >= ROUND_LENGTH) return later(900, endRound);
+  if (outcome === 'clean') { const c = pick(Math.random, CHEERS); void toast(c, c); }
   later(1500, nextProblem);
 }
 
-export function miss() {
-  set({ firstTry: false });
+/** A wrong answer. `explain` says what went wrong, teaching the answer when `teach` is set; taps wait until it's done. */
+export function miss(explain: (teach: boolean) => Promise<unknown>) {
+  const r = round.value;
+  if (!r || r.busy || r.thinking) return;
+  const misses = r.misses + 1, key = r.key;
+  set({ firstTry: false, misses, thinking: true });
   sBad();
+  void explain(teachNow(misses, isStruggling(r.mode))).then(() => later(THINK_MS, () => { if (round.value?.key === key) set({ thinking: false }); }));
 }
 
 export function helped() {
@@ -116,6 +133,7 @@ export function helped() {
 
 function endRound() {
   const before = affordableCount();
-  update(s => ({ ...s, bolts: s.bolts + BOLTS_PER_ROUND }));
-  set({ ended: true, canBuild: affordableCount() > before });
+  const earned = boltsFor(round.value!.results);
+  update(s => ({ ...s, bolts: s.bolts + earned }));
+  set({ ended: true, earned, canBuild: affordableCount() > before });
 }

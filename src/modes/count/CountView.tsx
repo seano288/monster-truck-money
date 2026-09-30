@@ -39,10 +39,8 @@ export function CountView({ problem: p, level, api }: ModeViewProps<CountProblem
   function tap(c: number) {
     if (api.busy || done || wrong.includes(c)) return;
     if (checkCount(p, c)) { run.current++; setDone(true); return api.correct(); }
-    api.miss();
     setWrong([...wrong, c]);
-    if (api.struggling) void toast("Not quite! Let's count together.", 'Not quite!', "Let's count together.").then(helpCount);
-    else void toast('Not quite!', 'Not quite!');
+    api.miss(teach => (teach ? toast("Not quite! Let's count together.", 'Not quite!', "Let's count together.").then(helpCount) : toast('Not quite!', 'Not quite!')));
   }
 
   const running = (i: number) => p.pile.slice(0, i + 1).reduce((s, k) => s + MONEY[k].cents, 0);

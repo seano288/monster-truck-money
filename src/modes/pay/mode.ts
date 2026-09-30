@@ -14,6 +14,7 @@ export const payMode: GameMode<PayProblem, Parameters<typeof checkPay>[1]> = {
   introMoney: { 2: ['q'], 3: ['b1'] }, // no $5 bill: no price needs one
   phrases: PAY_PHRASES,
   makeProblem: makePay,
+  replay: p => p, // the same thing at the same price, with an empty tray
   checkAnswer: (p, tray) => checkPay(p, tray).kind === 'paid',
   View: PayView,
 };

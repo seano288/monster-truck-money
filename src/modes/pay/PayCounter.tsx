@@ -73,11 +73,12 @@ export function PayCounter({ price, bank, icon, peekMoney, speech, api, onPaid }
     const r = checkPay({ price }, tray);
     if (r.kind === 'paid') { run.current++; setDone(true); onPaid?.(paid); return api.correct(); }
     if (r.kind === 'empty') return void toast('Tap some money first!', 'Tap some money first!'); // not an answer, so not a miss
-    api.miss();
-    const said = r.kind === 'short'
-      ? toast(`Almost! You need ${fmt(r.by)} more.`, 'Almost!', 'You need', { cents: r.by }, 'more')
-      : toast(`Too much! Take back ${fmt(r.by)}.`, 'Too much!', 'Take back', { cents: r.by });
-    if (api.struggling) void said.then(helpPay);
+    api.miss(teach => {
+      const said = r.kind === 'short'
+        ? toast(`Almost! You need ${fmt(r.by)} more.`, 'Almost!', 'You need', { cents: r.by }, 'more')
+        : toast(`Too much! Take back ${fmt(r.by)}.`, 'Too much!', 'Take back', { cents: r.by });
+      return teach ? said.then(helpPay) : said;
+    });
   }
 
   const shown = tray.map((k, i) => ({ k, i })).sort((a, b) => biggestFirst(a.k, b.k));

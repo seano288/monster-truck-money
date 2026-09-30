@@ -41,4 +41,7 @@ export function makeCount(level: Level, rng: Rng): CountProblem {
   }
 }
 
+/** The same pile again with its choices in a new order. */
+export const replayCount = (p: CountProblem, rng: Rng): CountProblem => ({ ...p, choices: shuffle(rng, p.choices) });
+
 export const checkCount = (p: CountProblem, answer: number) => answer === p.total;

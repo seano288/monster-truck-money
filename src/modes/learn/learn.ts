@@ -20,6 +20,10 @@ export function makeLearn(level: Level, rng: Rng): LearnProblem {
   return { kind: more ? 'more' : 'less', target: MONEY[a].cents > MONEY[b].cents === more ? a : b, options: [a, b] };
 }
 
+/** The same question again with its coins or answers in a new order. */
+export const replayLearn = (p: LearnProblem, rng: Rng): LearnProblem =>
+  'choices' in p ? { ...p, choices: shuffle(rng, p.choices) } : { ...p, options: shuffle(rng, p.options) };
+
 export const checkLearn = (p: LearnProblem, answer: MoneyKey) => answer === p.target;
 
 /** The penny or nickel mixed up with the dime: say that the small dime is worth more. */

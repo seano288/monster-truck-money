@@ -10,12 +10,13 @@ import type { Level, ModeId, ModeName } from './ids';
 export interface RoundApi {
   /** He got this problem right. */
   correct(): void;
-  /** A wrong answer: it only costs a retry. */
-  miss(): void;
+  /**
+   * A wrong answer. `explain` says what went wrong and returns once it's said; when `teach` is set it also shows
+   * him the answer (help steps in). Taps are held until then, and a moment longer.
+   */
+  miss(explain: (teach: boolean) => Promise<unknown>): void;
   /** He used help (or help ran by itself), so this problem doesn't count toward Mastery. */
   helped(): void;
-  /** He has missed a lot lately, so help should step in after a single miss. */
-  struggling: boolean;
   /** Taps are ignored while the Round moves on. */
   busy: boolean;
 }
@@ -37,6 +38,8 @@ export interface GameMode<P = unknown, A = unknown> {
   /** Everything the mode says (all listed in phrases.ts). */
   phrases: readonly Phrase[];
   makeProblem(level: Level, rng: Rng): P;
+  /** The same problem again, shuffled, for when it comes back after a miss. */
+  replay(problem: P, rng: Rng): P;
   checkAnswer(problem: P, answer: A): boolean;
   View: ComponentType<ModeViewProps<P>>;
 }

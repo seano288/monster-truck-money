@@ -5,6 +5,7 @@ import { PRICES } from '../garage/economy';
 import { MONEY, MONEY_NAMES, MONEY_VALUES, type MoneyKey, type MoneyName, type MoneyValue } from '../money/money';
 import { MODE_NAMES, type ModeName } from '../modes/ids';
 import { SHOP_ITEMS, type ShopItem } from '../modes/pay/pay';
+import { MAX_BOLTS } from '../round/rules';
 import { allAmountPieces, type AmountPiece } from './amount';
 
 type Of<T extends readonly string[]> = T[number];
@@ -44,7 +45,11 @@ type IntroPhrase = Of<typeof INTRO> | `This is a ${MoneyName}.` | `It is worth $
 const introPhrases = (): IntroPhrase[] => [...INTRO, ...MONEY_NAMES.map(m => `This is a ${m}.` as const), ...MONEY_VALUES.map(v => `It is worth ${v}.` as const)];
 
 // ---------- progress and end of Round ----------
-const PROGRESS = ['You earned 3 Bolts!', 'Level up!', 'Now you get quarters!', 'Now you get dollar bills!'] as const;
+const PROGRESS = ['Level up!', 'Now you get quarters!', 'Now you get dollar bills!'] as const;
+type EarnedPhrase = 'You earned 1 Bolt!' | `You earned ${number} Bolts!`;
+/** "You earned 4 Bolts!" */
+export const earnedBolts = (n: number): EarnedPhrase => (n === 1 ? 'You earned 1 Bolt!' : `You earned ${n} Bolts!`);
+const earnedPhrases = () => Array.from({ length: MAX_BOLTS }, (_, i) => earnedBolts(i + 1));
 type ModePhrase = `You are a ${ModeName} star!` | `You opened ${ModeName}!`;
 const modePhrases = (): ModePhrase[] => MODE_NAMES.flatMap(m => [`You are a ${m} star!`, `You opened ${m}!`] as const);
 /** Tapping a locked mode's tile. */
@@ -80,10 +85,10 @@ const garagePhrases = (): GaragePhrase[] => {
 // ---------- Show Off ----------
 const SHOW = ['Show time!'] as const;
 
-export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | Of<typeof SHOW> | AmountPiece;
+export type Phrase = Of<typeof LEARN> | MoneyPhrase | Of<typeof CHEERS> | Of<typeof ROUNDS> | BuyPhrase | IntroPhrase | Of<typeof PROGRESS> | EarnedPhrase | ModePhrase | Of<typeof LOCKED_HINTS> | GaragePhrase | Of<typeof SHOW> | AmountPiece;
 
 export const LEARN_PHRASES: readonly Phrase[] = [...LEARN, ...moneyPhrases()];
 export const PAY_PHRASES: readonly Phrase[] = [...buyPhrases(), 'It costs', 'Tap some money first!', 'Almost!', 'You need', 'more', 'Too much!', 'Take back', 'Tap a coin to hear its name.', 'Count more cash to open this!'];
 export const COUNT_PHRASES: readonly Phrase[] = ['How much money is this?', 'Not quite!', "Let's count together.", 'Tap a coin to hear its name.', 'Learn more coins to open this!'];
 
-export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...SHOW, ...allAmountPieces()])];
+export const PHRASES: readonly Phrase[] = [...new Set<Phrase>([...LEARN_PHRASES, ...CHEERS, ...ROUNDS, ...buyPhrases(), ...introPhrases(), ...PROGRESS, ...earnedPhrases(), ...modePhrases(), ...LOCKED_HINTS, ...garagePhrases(), ...SHOW, ...allAmountPieces()])];

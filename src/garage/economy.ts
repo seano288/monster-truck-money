@@ -4,8 +4,8 @@
 import { ALL_BUYABLES, bodyOf, isBodyItem, LEGENDARY, modId, parseMod, SLOTS, TOP, type BodyId, type Buyable, type ModId, type SlotId } from './catalog';
 
 export const PRICES = {
-  rungs: { 1: 3, 2: 9, 3: 18 },
-  bodies: { firetruck: 30, schoolbus: 45, jeep: 60 },
+  rungs: { 1: 5, 2: 15, 3: 30 },
+  bodies: { firetruck: 50, schoolbus: 75, jeep: 100 },
 } as const;
 /** Legendary Mods, in cents: $1.35 to $4.80, using everything up to the $5 bill. */
 export const CASH_PRICES = { tires: 135, paint: 210, decals: 275, lights: 360, horn: 480 } as const satisfies Record<SlotId, number>;
