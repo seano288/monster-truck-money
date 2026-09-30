@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_MODS, isLegendary } from './catalog';
+import { ALL_MODS, bodyItem, isLegendary } from './catalog';
 import { affordable, boltsNeeded, builtEverything, goalOf, nextLegendary, priceOf, unlock, waitingOn, type Wallet } from './economy';
 
 const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], ownedBodies: ['pickup', 'bigfoot', 'dragster'], goal: null, ...over });
@@ -28,6 +28,11 @@ describe('prices', () => {
 
   it('costs 50, 75 and 100 Bolts for the new Bodies', () => {
     expect([priceOf('body:firetruck'), priceOf('body:schoolbus'), priceOf('body:jeep')]).toEqual([{ bolts: 50 }, { bolts: 75 }, { bolts: 100 }]);
+  });
+
+  it('costs 125 up to 300 Bolts for the second batch of Bodies', () => {
+    const bodies = ['towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const;
+    expect(bodies.map(b => priceOf(bodyItem(b)).bolts)).toEqual([125, 150, 175, 200, 250, 300]);
   });
 });
 
@@ -112,13 +117,20 @@ describe('the Goal', () => {
     expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: ['pickup', 'bigfoot', 'dragster', 'firetruck'] }))).toBe('body:schoolbus');
   });
 
+  it('moves on to the second batch, cheapest first, once the first Bodies are his', () => {
+    const first = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'] as const;
+    expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: first }))).toBe('body:towtruck');
+    expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: [...first, 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor'] }))).toBe('body:racecar');
+  });
+
   it('is gone once he has built everything, Legendaries and Bodies too', () => {
-    const bodies = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'] as const;
+    const bodies = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep', 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const;
     expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: bodies }))).toBeNull();
     expect(builtEverything(wallet({ unlocked: allBoltMods, ownedBodies: bodies }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: [...ALL_MODS] }))).toBe(false);
     expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies }))).toBe(true);
     expect(builtEverything(wallet({ unlocked: ALL_MODS.filter(m => !m.startsWith('engine:')), ownedBodies: bodies }))).toBe(false);
+    expect(builtEverything(wallet({ unlocked: [...ALL_MODS], ownedBodies: bodies.filter(b => b !== 'racecar') }))).toBe(false);
     expect(builtEverything(wallet())).toBe(false);
   });
 

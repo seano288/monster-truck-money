@@ -1,11 +1,14 @@
-// The Garage's parts: six Bodies (three starters, three bought with Bolts), six Slots, and in each Slot a free
+// The Garage's parts: twelve Bodies (three starters, nine bought with Bolts), six Slots, and in each Slot a free
 // default plus four Mods: Rungs 1-3 bought with Bolts and a Legendary Rung 4 bought with money.
-export const BODY_IDS = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'] as const;
+export const BODY_IDS = [
+  'pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep', 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar',
+] as const;
 export type BodyId = (typeof BODY_IDS)[number];
 /** The Bodies he picks from on first launch, owned from the start. */
 export const STARTER_BODIES = ['pickup', 'bigfoot', 'dragster'] as const satisfies readonly BodyId[];
 export const BODY_NAMES = {
   pickup: 'Pickup', bigfoot: 'Big Foot', dragster: 'Dragster', firetruck: 'Fire Truck', schoolbus: 'School Bus', jeep: 'Jeep',
+  towtruck: 'Tow Truck', dumptruck: 'Dump Truck', police: 'Police Truck', icecream: 'Ice Cream Truck', tractor: 'Tractor', racecar: 'Race Car',
 } as const satisfies Record<BodyId, string>;
 export type BodyName = (typeof BODY_NAMES)[BodyId];
 export type StarterBody = (typeof STARTER_BODIES)[number];

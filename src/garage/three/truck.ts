@@ -246,7 +246,7 @@ class Builder {
       body.add(this.box(0.03, 0.08, 0.2, tail, bw - 0.012, 0.28, s * W * 0.36)); // tail lights
       body.add(this.box(0.04, 0.03, 0.12, M.dark, toX(mx) - 0.04, toY(my) + 0.05, s * (ext + 0.05)), this.box(0.05, 0.12, 0.09, M.dark, toX(mx) - 0.04, toY(my) + 0.08, s * (ext + 0.13))); // mirrors
     }
-    if (bodyId !== 'dragster') { // antenna
+    if (bodyId !== 'dragster' && bodyId !== 'racecar') { // antenna
       const ax = toX(B.roof[0]) + 0.06, ay = toY(B.roof[2]) + SH.bs;
       body.add(this.cyl(0.006, 0.006, 0.6, M.dark, ax, ay + 0.3, W * 0.42));
       const tip = new THREE.Mesh(new THREE.SphereGeometry(0.02, 8, 6), M.dark); tip.position.set(ax, ay + 0.6, W * 0.42); body.add(tip);
@@ -273,6 +273,21 @@ class Builder {
     if (bodyId === 'jeep') {
       const sp = this.wheel(1, 0.3, 0.22); sp.rotation.y = Math.PI / 2; sp.position.set(bw - 0.14, 0.55, 0); body.add(sp); // spare on the tailgate
       for (const s of [-1, 1]) body.add(this.box(0.9, 0.04, 0.14, M.dark, toX(170), 0.02, s * (ext + 0.07))); // side steps
+    }
+    if (bodyId === 'towtruck') body.add(this.box(0.14, 0.18, W * 0.28, M.dark, toX(70), toY(-44) + SH.bs + 0.09, 0)); // winch on the bed (the boom is a later ticket)
+    if (bodyId === 'police') { // red and blue light bar at the back of the roof
+      const x = toX(118), y = toY(-116) + SH.bs + 0.05;
+      body.add(this.box(0.16, 0.06, W * 0.7, M.dark, x, y - 0.02, 0));
+      for (const s of [-1, 1]) body.add(this.box(0.14, 0.08, W * 0.3, this.glow(s < 0 ? 0xff1a1a : 0x1a6bff, 3.5), x, y + 0.04, s * W * 0.17));
+    }
+    if (bodyId === 'icecream') { // a giant cone on the roof
+      const x = toX(80), y = toY(-124) + SH.bs;
+      body.add(this.cyl(0.13, 0.02, 0.34, this.mat(std(0xd9a066, { roughness: 0.8 })), x, y + 0.17, 0, undefined, 16));
+      const scoop = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 14), this.mat(std(0xffb3d1, { roughness: 0.6 }))); scoop.position.set(x, y + 0.4, 0); body.add(scoop);
+    }
+    if (bodyId === 'tractor') { // exhaust stack up through the hood
+      const x = toX(300), y = toY(-56) + SH.bs;
+      body.add(this.cyl(0.04, 0.04, 0.6, M.chrome, x, y + 0.3, W * 0.2), this.cyl(0.05, 0.04, 0.08, M.dark, x, y + 0.62, W * 0.2));
     }
     if (bodyId === 'dragster') {
       body.add(this.box(0.3, 0.16, 0.34, M.chrome, toX(292), 0.32 + SH.bs + 0.08, 0), this.box(0.22, 0.12, 0.3, M.dark, toX(296), 0.32 + SH.bs + 0.22, 0)); // blower + scoop
@@ -430,7 +445,9 @@ function realPaint(c: CanvasRenderingContext2D, B: BodyShape, bodyId: BodyId) {
   c.lineJoin = 'round'; c.lineWidth = 7; c.strokeStyle = '#16181c'; c.stroke(new Path2D(B.win));
   if (bodyId === 'schoolbus') { c.fillStyle = '#16181c'; c.fillRect(B.back, -66, B.front - B.back, 4); c.fillRect(B.back, -46, B.front - B.back, 4); }
   if (bodyId === 'firetruck') { c.lineWidth = 1.6; c.strokeStyle = 'rgba(0,0,0,.55)'; for (let x = 44; x < 240; x += 66) { c.beginPath(); c.roundRect(x, -90, 58, 80, 5); c.stroke(); } }
-  if (bodyId !== 'dragster' && bodyId !== 'schoolbus') {
+  if (bodyId === 'dumptruck') { c.lineWidth = 3; c.strokeStyle = 'rgba(0,0,0,.4)'; for (let x = 62; x < 232; x += 42) { c.beginPath(); c.moveTo(x, -114); c.lineTo(x, -8); c.stroke(); } }
+  if (bodyId === 'icecream') { c.fillStyle = '#ff8fc0'; for (let x = 90; x < 200; x += 22) { c.beginPath(); c.moveTo(x, -104); c.lineTo(x + 11, -116); c.lineTo(x + 22, -104); c.fill(); } } // awning over the serving window
+  if (bodyId !== 'dragster' && bodyId !== 'schoolbus' && bodyId !== 'icecream') {
     const [x0, x1, ry] = B.roof, dw = (x1 - x0) * 0.72, wy = Math.max(...parsePath(B.win).flat().map(p => p[1]));
     c.lineWidth = 1.6; c.strokeStyle = 'rgba(0,0,0,.55)'; c.beginPath(); c.roundRect(x0 + 4, ry + 3, dw, -ry - 9, 6); c.stroke();
     c.fillStyle = '#24272c'; c.beginPath(); c.roundRect(x0 + dw - 22, wy + 9, 16, 4, 2); c.fill();

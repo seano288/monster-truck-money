@@ -1,7 +1,7 @@
 // The Garage: "Tap the truck". The 3D Truck fills the stage with a hotspot on each Slot's part; tapping one
 // swings the camera there and opens that Slot's sheet of 5 Mods (bottom sheet in portrait, side panel in landscape).
-// Along the bottom, the Body switcher shows every Body, the locked ones with their Bolt price. 📸 Show Off puts
-// the Truck on stage.
+// Along the bottom, the Body switcher shows every Body, the locked ones with their Bolt price; it scrolls, and keeps
+// the Body he's driving in view. 📸 Show Off puts the Truck on stage.
 import { useEffect, useRef, useState } from 'preact/hooks';
 import { screen } from '../app/nav';
 import { ENGINES, HORNS, sClink, sNope } from '../audio/sfx';
@@ -26,6 +26,7 @@ import { GarageStage, spreadHotspots } from './three/stage';
 
 export function GarageScreen() {
   const canvas = useRef<HTMLCanvasElement>(null), stageEl = useRef<HTMLDivElement>(null);
+  const strip = useRef<HTMLDivElement>(null);
   const hots = useRef<Partial<Record<SlotId, HTMLButtonElement | null>>>({});
   const [stage, setStage] = useState<GarageStage | null>(null);
   const [sheet, setSheet] = useState<SlotId | null>(null);
@@ -53,6 +54,7 @@ export function GarageScreen() {
   }, []);
 
   useEffect(() => { stage?.setTruck(body, f); }, [stage, body, JSON.stringify(f)]);
+  useEffect(() => { strip.current?.querySelector('.on')?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' }); }, [body, showing]);
 
   function openSheet(slot: SlotId) {
     setSheet(slot);
@@ -138,7 +140,7 @@ export function GarageScreen() {
             {SLOTS.map(s => (
               <button key={s.id} ref={el => { hots.current[s.id] = el; }} class={`hot hidden ${sheet === s.id ? 'on' : ''} ${slotHasAffordable(s.id) ? 'aff' : ''}`} aria-label={s.name} onClick={() => openSheet(s.id)}>{s.icon}</button>
             ))}
-            <div class="bodystrip">
+            <div class="bodystrip" ref={strip}>
               {BODY_IDS.map(b => {
                 const mine = owns(b), price = isStarter(b) ? 0 : PRICES.bodies[b];
                 const cls = b === body ? 'on' : mine ? 'owned' : canAffordBody(b) ? 'afford' : 'locked';

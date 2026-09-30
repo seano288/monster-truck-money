@@ -113,3 +113,29 @@ describe('migrate: the Engine Slot', () => {
     expect(s.fitted.jeep.engine).toBe(2);
   });
 });
+
+describe('migrate: the second batch of Bodies', () => {
+  it('loads a version-2 save from before them with its Bodies and fits kept, and default fits on the new ones', () => {
+    const old = {
+      version: 2, bolts: 140, body: 'jeep', ownedBodies: ['pickup', 'bigfoot', 'dragster', 'jeep'], unlocked: ['tires:1', 'paint:3'], goal: 'body:firetruck',
+      fitted: Object.fromEntries(['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'].map(b => [b, { tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0 }])),
+    };
+    const s = migrate(old);
+    expect(s.version).toBe(2);
+    expect(s.bolts).toBe(140);
+    expect(s.body).toBe('jeep');
+    expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'jeep']);
+    expect(s.goal).toBe('body:firetruck');
+    expect(s.fitted.jeep).toEqual({ tires: 1, paint: 3, decals: 0, lights: 0, horn: 0, engine: 0 });
+    for (const b of ['towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const) {
+      expect(s.fitted[b]).toEqual({ tires: 0, paint: 0, decals: 0, lights: 0, horn: 0, engine: 0 });
+    }
+  });
+
+  it('keeps one he bought, and a locked one as the Goal', () => {
+    const s = migrate({ version: 2, ownedBodies: ['racecar'], body: 'racecar', goal: 'body:tractor' });
+    expect(s.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'racecar']);
+    expect(s.body).toBe('racecar');
+    expect(s.goal).toBe('body:tractor');
+  });
+});
