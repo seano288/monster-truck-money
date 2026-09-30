@@ -10,6 +10,7 @@ import { screen } from '../app/nav';
 import { ENGINES, HORNS, sClink, sNope } from '../audio/sfx';
 import { celebrateBody, celebrateUnlock } from '../celebrate/garageShow';
 import { game } from '../game/store';
+import type { Level } from '../modes/ids';
 import { fmt } from '../money/money';
 import { startRound } from '../round/round';
 import { TrophyShelf } from '../trophies/TrophyShelf';
@@ -20,9 +21,9 @@ import { BodyArt } from './BodyArt';
 import { bodyItem, BODY_IDS, BODY_NAMES, colourById, colourItem, COLOURS, FREE_COLOUR, isStarter, LEGENDARY, modId, modName, RUNGS, SLOTS, slotById, TOP, type BodyId, type BoughtColour, type ColourId, type Rung, type SlotId } from './catalog';
 import { Checkout } from './Checkout';
 import { digits, turnWheel, type Wheel } from './doorNumber';
-import { CASH_PRICES, PRICES } from './economy';
+import { PRICES } from './economy';
 import {
-  buyLegendary, canAfford, canAffordBody, canAffordColour, currentBody, currentFit, goal, gotLine, isUnlocked, needLines, owns, ownsColour, setDoorNumber, slotHasAffordable,
+  buyLegendary, canAfford, canAffordBody, canAffordColour, currentBody, currentFit, goal, gotLine, isUnlocked, legendaryPrice, needLines, owns, ownsColour, setDoorNumber, slotHasAffordable,
   stepBody, tapBody, tapColour, tapMod, waitingFor, waitLines,
 } from './garage';
 import { GoalBar } from './GoalBar';
@@ -122,8 +123,8 @@ export function GarageScreen() {
     void say(...needLines(item));
   }
 
-  function paid(slot: SlotId, cents: number) {
-    buyLegendary(slot, cents);
+  function paid(slot: SlotId, cents: number, level: Level) {
+    buyLegendary(slot, cents, level);
     setCheckout(null);
     if (stage) block(celebrateUnlock(stage, stageEl.current!, slot, LEGENDARY, currentFit(), gotLine(modId(slot, LEGENDARY))));
   }
@@ -213,7 +214,7 @@ export function GarageScreen() {
                   <button key={r} class={`mod-tile legend ${cls} ${wiggle === `${sheet}:${r}` ? 'wiggle' : ''}`} aria-label={modName(sheet, r)} onClick={() => tap(sheet, r)}>
                     <div class="ico"><PartIcon slot={sheet} rung={r} /></div>
                     <div class="nm">{modName(sheet, r)}</div>
-                    {!un && <div class="cost money">{fmt(CASH_PRICES[sheet])}</div>}
+                    {!un && <div class="cost money">{fmt(legendaryPrice(sheet))}</div>}
                     {fitted && <div class="check">✓</div>}
                     {wait && <><div class="lock">🔒</div><div class="wait" aria-label={`Needs ${modName(sheet, TOP)}`}><PartIcon slot={sheet} rung={TOP} /></div></>}
                   </button>
@@ -252,7 +253,7 @@ export function GarageScreen() {
         </div>
       )}
       {shelf && <TrophyShelf onClose={() => setShelf(false)} />}
-      {checkout && <Checkout slot={checkout} onPaid={cents => paid(checkout, cents)} onClose={() => setCheckout(null)} />}
+      {checkout && <Checkout slot={checkout} onPaid={(cents, level) => paid(checkout, cents, level)} onClose={() => setCheckout(null)} />}
       {blocked && <div class="blocker" />}
     </div>
   );

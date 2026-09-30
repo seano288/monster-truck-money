@@ -6,10 +6,16 @@ import {
   bodyItem, BODY_IDS, BOUGHT_COLOURS, buyableName, colourById, colourItem, defaultFit, FREE_COLOUR, isLegendary, isModItem, isStarter, LEGENDARY, modId, modName, paintShowsColour, parseMod,
   BOLT_RUNGS, type BodyId, type BoughtColour, type Buyable, type BuyRung, type ColourId, type Fit, type ModId, type Rung, type SlotId,
 } from './catalog';
-import { affordable, boltsNeeded, CASH_PRICES, goalOf, isLocked, nextLegendary as nextLegendaryOf, priceOf, unlock, waitingOn } from './economy';
+import type { Level } from '../modes/ids';
+import { affordable, boltsNeeded, forBolts, type BoltItem, goalOf, isLocked, nextLegendary as nextLegendaryOf, priceOf, unlock, waitingOn } from './economy';
 
 export const currentBody = (): BodyId => game.value.body ?? 'pickup';
 export const currentFit = (): Fit => game.value.fitted[currentBody()] ?? defaultFit();
+
+/** His Pay the Shop Level, which sets what a Legendary costs. */
+export const payLevel = (): Level => game.value.modes.pay.level;
+/** A Legendary's price in cents at his Pay the Shop Level. */
+export const legendaryPrice = (slot: SlotId, level = payLevel()) => priceOf(modId(slot, LEGENDARY), level).cents!;
 
 /** His Truck's paint as one flat colour, for the 2D Truck on Home and the celebration road: Plain shows his Colour. */
 export function truckColor() {
@@ -42,7 +48,7 @@ export function setDoorNumber(n: number) {
 
 export const isUnlocked = (slot: SlotId, rung: Rung) => rung === 0 || game.value.unlocked.includes(modId(slot, rung));
 /** A Bolt item he has enough Bolts for. */
-const canBuyWithBolts = (x: Buyable) => isLocked(game.value, x) && priceOf(x).bolts !== undefined && boltsNeeded(game.value, x) === 0;
+const canBuyWithBolts = (x: Buyable) => isLocked(game.value, x) && forBolts(x) && boltsNeeded(game.value, x) === 0;
 export const canAfford = (slot: SlotId, rung: Rung) => rung !== 0 && canBuyWithBolts(modId(slot, rung));
 export const canAffordBody = (b: BodyId) => !isStarter(b) && canBuyWithBolts(bodyItem(b));
 /** The Paint hotspot also rings for a Colour he can buy. */
@@ -93,9 +99,9 @@ export function tapColour(c: ColourId): Exclude<TapResult, 'checkout' | 'waiting
   return 'goal';
 }
 
-/** He paid exactly for a Legendary at the checkout: it's his, and fitted. */
-export function buyLegendary(slot: SlotId, cents: number) {
-  update(s => unlock(s, modId(slot, LEGENDARY), { kind: 'cash', cents }));
+/** He paid exactly for a Legendary at the checkout, at the Level its price was set for: it's his, and fitted. */
+export function buyLegendary(slot: SlotId, cents: number, level: Level) {
+  update(s => unlock(s, modId(slot, LEGENDARY), { kind: 'cash', cents, level }));
   fit(slot, LEGENDARY);
 }
 
@@ -114,7 +120,7 @@ export function tapBody(b: BodyId): BodyTapResult {
 }
 
 /** "Chunky. You need 2 more Bolts." */
-export const needLines = (x: Buyable): Phrase[] => [buyableName(x), needBolts(boltsNeeded(game.value, x))];
+export const needLines = (x: BoltItem): Phrase[] => [buyableName(x), needBolts(boltsNeeded(game.value, x))];
 
 /** "You got Chunky!", or "You bought Gold Flake!" for a Legendary. */
 export function gotLine(x: Buyable): Phrase {
@@ -122,8 +128,8 @@ export function gotLine(x: Buyable): Phrase {
   return `You got ${buyableName(x)}!` as Phrase;
 }
 
-/** "Gold Flake costs $2.10." */
-export const costLines = (slot: SlotId): Item[] => [`${modName(slot, LEGENDARY)} costs` as Phrase, { cents: CASH_PRICES[slot] }];
+/** "Gold Flake costs $1.50." */
+export const costLines = (slot: SlotId, level = payLevel()): Item[] => [`${modName(slot, LEGENDARY)} costs` as Phrase, { cents: legendaryPrice(slot, level) }];
 
 /** "Laser Show. Get Glow Under first!" */
 export function waitLines(slot: SlotId, top: ModId): Phrase[] {
@@ -131,7 +137,7 @@ export function waitLines(slot: SlotId, top: ModId): Phrase[] {
   return [modName(slot, LEGENDARY), `Get ${modName(slot, rung)} first!` as Phrase];
 }
 
-export const nextLegendary = () => nextLegendaryOf(game.value);
+export const nextLegendary = () => nextLegendaryOf(game.value, payLevel());
 
 /** What tapping the Goal bar says. */
 export function goalLines(): Item[] {

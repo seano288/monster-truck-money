@@ -1,12 +1,12 @@
 // The Goal bar: the Mod, Body or Colour he's saving toward and how close he is. Tapping it says so. Once everything
-// bought with Bolts is his, it shows the next Legendary and its price in money.
+// bought with Bolts is his, it shows the next Legendary and its price in money at his Pay the Shop Level.
 import { game } from '../game/store';
 import { fmt } from '../money/money';
 import { say } from '../voice/say';
 import { BodyArt } from './BodyArt';
 import { bodyOf, colourById, colourOf, isBodyItem, isColourItem, LEGENDARY, parseMod } from './catalog';
-import { CASH_PRICES, priceOf } from './economy';
-import { goal, goalLines, nextLegendary } from './garage';
+import { priceOf } from './economy';
+import { goal, goalLines, legendaryPrice, nextLegendary } from './garage';
 import { PartIcon } from './icons';
 
 export function GoalBar() {
@@ -17,7 +17,7 @@ export function GoalBar() {
     return (
       <button class="goalchip legend" aria-label="Goal" onClick={tap}>
         <span class="gi"><PartIcon slot={l} rung={LEGENDARY} /></span>
-        <span class="num">{fmt(CASH_PRICES[l])}</span>
+        <span class="num">{fmt(legendaryPrice(l))}</span>
       </button>
     );
   }

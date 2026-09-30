@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { ALL_MODS, BODY_IDS, bodyItem, BOUGHT_COLOURS, colourItem, COLOURS, isLegendary } from './catalog';
-import { affordable, boltsNeeded, builtEverything, goalOf, nextLegendary, priceOf, unlock, waitingOn, type Wallet } from './economy';
+import { LEVELS, type Level } from '../modes/ids';
+import { helpPayCoins } from '../modes/pay/pay';
+import { LEVEL_MONEY, MONEY, total } from '../money/money';
+import { amountPieces } from '../voice/amount';
+import { ALL_MODS, BODY_IDS, bodyItem, BOUGHT_COLOURS, colourItem, COLOURS, isLegendary, LEGENDARY, modId, SLOTS } from './catalog';
+import { affordable, forBolts, boltsNeeded, builtEverything, goalOf, nextLegendary, priceOf, unlock, waitingOn, type Wallet } from './economy';
 
 const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], ownedBodies: ['pickup', 'bigfoot', 'dragster'], colours: [], goal: null, ...over });
 
@@ -10,40 +14,63 @@ describe('prices', () => {
   });
 
   it('adds up to 500 Bolts for the 30 Bolt Mods', () => {
-    const boltMods = ALL_MODS.filter(m => !isLegendary(m));
+    const boltMods = ALL_MODS.filter(forBolts);
     expect(boltMods).toHaveLength(30);
-    expect(boltMods.reduce((n, m) => n + (priceOf(m).bolts ?? 0), 0)).toBe(500);
+    expect(boltMods.reduce((n, m) => n + priceOf(m).bolts, 0)).toBe(500);
   });
 
-  it('prices the Tires, Paint, Decals, Lights and Horn Legendaries in money, from $1.35 to $4.80', () => {
-    expect(['tires:4', 'paint:4', 'decals:4', 'lights:4', 'horn:4'].map(m => priceOf(m as 'tires:4'))).toEqual([
-      { cents: 135 }, { cents: 210 }, { cents: 275 }, { cents: 360 }, { cents: 480 },
-    ]);
+  it('prices every Legendary in money at each Level, cheapest to dearest in the same order', () => {
+    const order = ['tires', 'number', 'paint', 'grille', 'decals', 'exhaust', 'lights', 'engine', 'topper', 'horn'] as const;
+    for (const level of LEVELS) {
+      const cents = order.map(s => priceOf(modId(s, LEGENDARY), level).cents!);
+      expect(cents).toEqual([...cents].sort((a, b) => a - b));
+      expect(new Set(cents).size).toBe(order.length);
+    }
   });
 
-  it('prices the Engine Legendary, Rocket, at $3.95', () => {
-    expect(priceOf('engine:4')).toEqual({ cents: 395 });
-    expect([priceOf('engine:1'), priceOf('engine:2'), priceOf('engine:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+  it('keeps Level 1 under $1, Level 2 up to $3 and Level 3 up to $9', () => {
+    const cents = (level: Level) => SLOTS.map(s => priceOf(modId(s.id, LEGENDARY), level).cents!);
+    expect(Math.max(...cents(1))).toBeLessThan(100);
+    expect(Math.min(...cents(2))).toBeGreaterThanOrEqual(100);
+    expect(Math.max(...cents(2))).toBeLessThanOrEqual(300);
+    expect(Math.min(...cents(3))).toBeGreaterThan(300);
+    expect(Math.max(...cents(3))).toBeLessThanOrEqual(900);
   });
 
-  it('prices the Grille Legendary, Dragon Jaw, at $2.45', () => {
-    expect(priceOf('grille:4')).toEqual({ cents: 245 });
-    expect([priceOf('grille:1'), priceOf('grille:2'), priceOf('grille:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+  it('prices Level 2 Legendaries at a quarter or more and Level 3 at a dollar or more', () => {
+    for (const s of SLOTS) {
+      expect(priceOf(modId(s.id, LEGENDARY), 2).cents!).toBeGreaterThanOrEqual(MONEY.q.cents);
+      expect(priceOf(modId(s.id, LEGENDARY), 3).cents!).toBeGreaterThanOrEqual(MONEY.b1.cents);
+    }
   });
 
-  it('prices the Exhaust Legendary, Rainbow Blast, at $3.20', () => {
-    expect(priceOf('exhaust:4')).toEqual({ cents: 320 });
-    expect([priceOf('exhaust:1'), priceOf('exhaust:2'), priceOf('exhaust:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+  it('prices every Legendary so it can be paid exactly with its Level\'s money', () => {
+    for (const level of LEVELS) for (const s of SLOTS) {
+      const cents = priceOf(modId(s.id, LEGENDARY), level).cents!;
+      expect(total(helpPayCoins(cents, LEVEL_MONEY[level]))).toBe(cents);
+    }
   });
 
-  it('prices the Roof Topper Legendary, Siren, at $4.15', () => {
-    expect(priceOf('topper:4')).toEqual({ cents: 415 });
-    expect([priceOf('topper:1'), priceOf('topper:2'), priceOf('topper:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+  it('has a voice clip for every Legendary price', () => {
+    for (const level of LEVELS) for (const s of SLOTS) expect(() => amountPieces(priceOf(modId(s.id, LEGENDARY), level).cents!)).not.toThrow();
   });
 
-  it('prices the Door Number Legendary, Glowing Gold, at $1.85', () => {
-    expect(priceOf('number:4')).toEqual({ cents: 185 });
-    expect([priceOf('number:1'), priceOf('number:2'), priceOf('number:3')]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+  it('prices the Tires Legendary at 35¢, $1.10 and $3.35 by Level', () => {
+    expect(LEVELS.map(l => priceOf('tires:4', l))).toEqual([{ cents: 35 }, { cents: 110 }, { cents: 335 }]);
+  });
+
+  it('prices the Horn Legendary at 95¢, $2.90 and $8.80 by Level', () => {
+    expect(LEVELS.map(l => priceOf('horn:4', l))).toEqual([{ cents: 95 }, { cents: 290 }, { cents: 880 }]);
+  });
+
+  it('gives Bolt items the same price at every Level', () => {
+    for (const x of ['paint:1', 'engine:3', 'body:jeep', 'colour:teal'] as const) expect(priceOf(x, 1)).toEqual(priceOf(x, 3));
+  });
+
+  it('prices the Engine, Grille, Exhaust, Roof Topper and Door Number Mods in Bolts by Rung', () => {
+    for (const s of ['engine', 'grille', 'exhaust', 'topper', 'number'] as const) {
+      expect([priceOf(modId(s, 1)), priceOf(modId(s, 2)), priceOf(modId(s, 3))]).toEqual([{ bolts: 5 }, { bolts: 15 }, { bolts: 30 }]);
+    }
   });
 
   it('costs 50, 75 and 100 Bolts for the new Bodies', () => {
@@ -58,7 +85,7 @@ describe('prices', () => {
 
 describe('unlock', () => {
   const BOLTS = { kind: 'bolts' } as const;
-  const cash = (cents: number) => ({ kind: 'cash', cents }) as const;
+  const cash = (cents: number, level: Level) => ({ kind: 'cash', cents, level }) as const;
 
   it('spends the Bolts and unlocks the Mod', () => {
     const w = unlock(wallet({ bolts: 16 }), 'tires:2', BOLTS);
@@ -91,17 +118,30 @@ describe('unlock', () => {
 
   it('unlocks a Legendary only for the exact money, once the top Rung is unlocked', () => {
     const ready = wallet({ bolts: 99, unlocked: ['tires:3'] });
-    const w = unlock(ready, 'tires:4', cash(135));
+    const w = unlock(ready, 'tires:4', cash(110, 2));
     expect(w.unlocked).toEqual(['tires:3', 'tires:4']);
     expect(w.bolts).toBe(99); // money, not Bolts
-    expect(() => unlock(ready, 'tires:4', cash(130))).toThrow();
-    expect(() => unlock(ready, 'tires:4', cash(140))).toThrow();
+    expect(() => unlock(ready, 'tires:4', cash(105, 2))).toThrow();
+    expect(() => unlock(ready, 'tires:4', cash(115, 2))).toThrow();
     expect(() => unlock(ready, 'tires:4', BOLTS)).toThrow();
-    expect(() => unlock(wallet({ unlocked: ['tires:1', 'tires:2'] }), 'tires:4', cash(135))).toThrow();
+    expect(() => unlock(wallet({ unlocked: ['tires:1', 'tires:2'] }), 'tires:4', cash(110, 2))).toThrow();
+  });
+
+  it('unlocks a Legendary for exactly its price at his Level, at every Level', () => {
+    const ready = wallet({ unlocked: ['horn:3'] });
+    for (const level of LEVELS) {
+      const cents = priceOf('horn:4', level).cents!;
+      expect(unlock(ready, 'horn:4', cash(cents, level)).unlocked).toContain('horn:4');
+      for (const other of LEVELS.filter(l => l !== level)) expect(() => unlock(ready, 'horn:4', cash(priceOf('horn:4', other).cents!, level))).toThrow();
+    }
+  });
+
+  it('never needs Level 3 to buy a Legendary', () => {
+    expect(unlock(wallet({ unlocked: ['lights:3'] }), 'lights:4', cash(priceOf('lights:4', 1).cents!, 1)).unlocked).toContain('lights:4');
   });
 
   it('never takes money for a Bolt Mod', () => {
-    expect(() => unlock(wallet({ bolts: 99 }), 'tires:1', cash(3))).toThrow();
+    expect(() => unlock(wallet({ bolts: 99 }), 'tires:1', cash(3, 1))).toThrow();
   });
 });
 
@@ -178,14 +218,16 @@ describe('affordable', () => {
 });
 
 describe('the next Legendary', () => {
-  it('is the cheapest one still to buy, whether or not it is waiting', () => {
-    expect(nextLegendary(wallet())).toBe('tires');
-    expect(nextLegendary(wallet({ unlocked: ['tires:4'] }))).toBe('number');
-    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'paint:4'] }))).toBe('grille');
-    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'grille:4', 'paint:4'] }))).toBe('decals');
-    expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'grille:4', 'paint:4', 'decals:4'] }))).toBe('exhaust');
-    expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary).filter(m => m !== 'topper:4' && m !== 'horn:4') }))).toBe('topper');
-    expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary) }))).toBeNull();
+  it('is the cheapest one still to buy at his Level, whether or not it is waiting', () => {
+    for (const level of LEVELS) {
+      expect(nextLegendary(wallet(), level)).toBe('tires');
+      expect(nextLegendary(wallet({ unlocked: ['tires:4'] }), level)).toBe('number');
+      expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'paint:4'] }), level)).toBe('grille');
+      expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'grille:4', 'paint:4'] }), level)).toBe('decals');
+      expect(nextLegendary(wallet({ unlocked: ['tires:4', 'number:4', 'grille:4', 'paint:4', 'decals:4'] }), level)).toBe('exhaust');
+      expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary).filter(m => m !== 'topper:4' && m !== 'horn:4') }), level)).toBe('topper');
+      expect(nextLegendary(wallet({ unlocked: ALL_MODS.filter(isLegendary) }), level)).toBeNull();
+    }
   });
 });
 
@@ -212,7 +254,7 @@ describe('Colours', () => {
     expect(w.goal).toBeNull();
     expect(() => unlock(w, 'colour:teal', BOLTS)).toThrow();
     expect(() => unlock(wallet({ bolts: 2 }), 'colour:pink', BOLTS)).toThrow();
-    expect(() => unlock(wallet({ bolts: 9 }), 'colour:pink', { kind: 'cash', cents: 3 })).toThrow();
+    expect(() => unlock(wallet({ bolts: 9 }), 'colour:pink', { kind: 'cash', cents: 3, level: 1 })).toThrow();
   });
 
   it('is skipped by the Goal unless he chose one', () => {

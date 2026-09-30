@@ -43,7 +43,7 @@ export const TOP = 3;
 
 /** An unlockable Mod: its Slot and Rung. */
 export type ModId = `${SlotId}:${BuyRung}`;
-export const modId = (slot: SlotId, rung: BuyRung): ModId => `${slot}:${rung}`;
+export const modId = <R extends BuyRung>(slot: SlotId, rung: R) => `${slot}:${rung}` as `${SlotId}:${R}`;
 export const parseMod = (id: ModId) => { const [s, r] = id.split(':'); return { slot: s as SlotId, rung: Number(r) as BuyRung }; };
 export const ALL_MODS: readonly ModId[] = SLOTS.flatMap(s => RUNGS.map(r => modId(s.id, r)));
 export const isLegendary = (mod: ModId) => parseMod(mod).rung === LEGENDARY;

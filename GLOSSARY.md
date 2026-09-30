@@ -22,7 +22,7 @@ _Avoid_: Category, part type
 
 **Mod**: A part, look or sound that goes in one Slot (tires, paint, flames, lights, an engine and so on). A Mod is unlocked once, by spending Bolts (or money, for a Legendary), and cooler Mods cost more. After that it can be fitted to any Body or taken off freely.
 
-**Rung**: A Mod's step within its Slot: first, second, top, then Legendary. A higher Rung looks cooler and costs more. The first three are paid in Bolts; the Legendary Rung is paid in money, tapped into the Pay the Shop tray to the exact price, and opens for purchase once the top Rung in its Slot is unlocked. Each Slot also has a free default that is not a Rung.
+**Rung**: A Mod's step within its Slot: first, second, top, then Legendary. A higher Rung looks cooler and costs more. The first three are paid in Bolts; the Legendary Rung is paid in money, tapped into the Pay the Shop tray to the exact price, and opens for purchase once the top Rung in its Slot is unlocked. A Legendary's price follows the player's Pay the Shop Level and uses only that Level's money, so it grows as he improves; no Level is needed to buy one. Each Slot also has a free default that is not a Rung.
 _Avoid_: Tier, level (Level means how hard a Game Mode is)
 
 **Door Number**: The racing number on the Truck's door, 0 to 99, which the player picks himself with two wheels (tens and ones) while it is read aloud. Each Body keeps its own number, and changing it is always free. It is not a Mod: the Door Number Slot's Mods are only its style (Plain, Outlined, Flaming, Glowing Gold), and with No Number fitted it isn't shown.
