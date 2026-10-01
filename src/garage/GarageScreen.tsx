@@ -171,7 +171,7 @@ export function GarageScreen() {
             ))}
             <div class="bodystrip" ref={strip}>
               {BODY_IDS.map(b => {
-                const mine = owns(b), price = isStarter(b) ? 0 : PRICES.bodies[b];
+                const mine = owns(b), price = isStarter(b) ? 0 : PRICES.body;
                 const cls = b === body ? 'on' : mine ? 'owned' : canAffordBody(b) ? 'afford' : 'locked';
                 return (
                   <button key={b} class={`body-chip ${cls} ${wiggle === `body:${b}` ? 'wiggle' : ''}`} aria-label={BODY_NAMES[b]} onClick={() => tapBodyChip(b)}>

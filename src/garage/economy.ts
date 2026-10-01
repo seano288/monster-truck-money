@@ -1,4 +1,4 @@
-// The Garage economy. Bolt prices (Mods on Rungs 1-3, the new Bodies and the Colours) live in one table and Legendary cash
+// The Garage economy. Bolt prices (Mods on Rungs 1-3, every Body bought and the Colours) live in one table and Legendary cash
 // prices, one per Pay the Shop Level, in another. Buying goes only through unlock(): Bolts for everything except a
 // Legendary, which takes an exact payment in money at his Level's price. Level and Game Mode never lock anything.
 import type { Level } from '../modes/ids';
@@ -6,7 +6,7 @@ import { ALL_BUYABLES, bodyOf, colourOf, isBodyItem, isColourItem, isLegendary, 
 
 export const PRICES = {
   rungs: { 1: 5, 2: 15, 3: 30 },
-  bodies: { firetruck: 50, schoolbus: 75, jeep: 100, towtruck: 125, dumptruck: 150, police: 175, icecream: 200, tractor: 250, racecar: 300 },
+  body: 30,
   colour: 3,
 } as const;
 /**
@@ -34,7 +34,7 @@ export function priceOf(x: LegendaryId, level: Level): { cents: number };
 export function priceOf(x: BoltItem): { bolts: number };
 export function priceOf(x: Buyable, level: Level): Price;
 export function priceOf(x: Buyable, level?: Level): Price {
-  if (isBodyItem(x)) return { bolts: PRICES.bodies[bodyOf(x)] };
+  if (isBodyItem(x)) return { bolts: PRICES.body };
   if (isColourItem(x)) return { bolts: PRICES.colour };
   const { slot, rung } = parseMod(x);
   if (rung !== LEGENDARY) return { bolts: PRICES.rungs[rung] };
@@ -82,7 +82,8 @@ export function unlock<W extends Wallet>(w: W, x: Buyable, pay: Payment): W {
 const lockedForBolts = (w: Wallet) => ALL_BUYABLES.filter(forBolts).filter(x => isLocked(w, x));
 
 /**
- * What he's saving Bolts toward: the one he chose while it's locked, otherwise the cheapest locked Mod or Body.
+ * What he's saving Bolts toward: the one he chose while it's locked, otherwise the cheapest locked Mod or Body (on a tie,
+ * the first in the catalogue, so the Mods come before the Bodies).
  * A Colour is the Goal only when he chose it or it's all that's left, so the cheap ones don't take over the Goal bar.
  */
 export function goalOf(w: Wallet): BoltItem | null {

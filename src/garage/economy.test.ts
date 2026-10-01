@@ -3,7 +3,7 @@ import { LEVELS, type Level } from '../modes/ids';
 import { helpPayCoins } from '../modes/pay/pay';
 import { LEVEL_MONEY, MONEY, total } from '../money/money';
 import { amountPieces } from '../voice/amount';
-import { ALL_MODS, BODY_IDS, bodyItem, BOUGHT_COLOURS, colourItem, COLOURS, isLegendary, LEGENDARY, modId, SLOTS } from './catalog';
+import { ALL_MODS, BODY_IDS, bodyItem, BOUGHT_BODIES, BOUGHT_COLOURS, colourItem, COLOURS, isLegendary, LEGENDARY, modId, SLOTS } from './catalog';
 import { affordable, forBolts, boltsNeeded, builtEverything, goalOf, nextLegendary, priceOf, unlock, waitingOn, type Wallet } from './economy';
 
 const wallet = (over: Partial<Wallet> = {}): Wallet => ({ bolts: 0, unlocked: [], ownedBodies: ['pickup', 'bigfoot', 'dragster'], colours: [], goal: null, ...over });
@@ -73,13 +73,8 @@ describe('prices', () => {
     }
   });
 
-  it('costs 50, 75 and 100 Bolts for the new Bodies', () => {
-    expect([priceOf('body:firetruck'), priceOf('body:schoolbus'), priceOf('body:jeep')]).toEqual([{ bolts: 50 }, { bolts: 75 }, { bolts: 100 }]);
-  });
-
-  it('costs 125 up to 300 Bolts for the second batch of Bodies', () => {
-    const bodies = ['towtruck', 'dumptruck', 'police', 'icecream', 'tractor', 'racecar'] as const;
-    expect(bodies.map(b => priceOf(bodyItem(b)).bolts)).toEqual([125, 150, 175, 200, 250, 300]);
+  it('costs 30 Bolts for every Body he buys', () => {
+    expect(BOUGHT_BODIES.map(b => priceOf(bodyItem(b)))).toEqual(BOUGHT_BODIES.map(() => ({ bolts: 30 })));
   });
 });
 
@@ -107,13 +102,13 @@ describe('unlock', () => {
   });
 
   it('buys a Body with Bolts', () => {
-    const w = unlock(wallet({ bolts: 80, goal: 'body:schoolbus' }), 'body:schoolbus', BOLTS);
+    const w = unlock(wallet({ bolts: 35, goal: 'body:schoolbus' }), 'body:schoolbus', BOLTS);
     expect(w.bolts).toBe(5);
     expect(w.ownedBodies).toEqual(['pickup', 'bigfoot', 'dragster', 'schoolbus']);
     expect(w.unlocked).toEqual([]);
     expect(w.goal).toBeNull();
     expect(() => unlock(w, 'body:schoolbus', BOLTS)).toThrow();
-    expect(() => unlock(wallet({ bolts: 44 }), 'body:schoolbus', BOLTS)).toThrow();
+    expect(() => unlock(wallet({ bolts: 29 }), 'body:schoolbus', BOLTS)).toThrow();
   });
 
   it('unlocks a Legendary only for the exact money, once the top Rung is unlocked', () => {
@@ -181,7 +176,7 @@ describe('the Goal', () => {
     expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: ['pickup', 'bigfoot', 'dragster', 'firetruck'] }))).toBe('body:schoolbus');
   });
 
-  it('moves on to the second batch, cheapest first, once the first Bodies are his', () => {
+  it('moves on to the second batch, in order, once the first Bodies are his', () => {
     const first = ['pickup', 'bigfoot', 'dragster', 'firetruck', 'schoolbus', 'jeep'] as const;
     expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: first }))).toBe('body:towtruck');
     expect(goalOf(wallet({ unlocked: allBoltMods, ownedBodies: [...first, 'towtruck', 'dumptruck', 'police', 'icecream', 'tractor'] }))).toBe('body:racecar');
@@ -205,7 +200,7 @@ describe('the Goal', () => {
   it('says how many more Bolts he needs', () => {
     expect(boltsNeeded(wallet({ bolts: 5 }), 'paint:2')).toBe(10);
     expect(boltsNeeded(wallet({ bolts: 15 }), 'paint:2')).toBe(0);
-    expect(boltsNeeded(wallet({ bolts: 12 }), 'body:firetruck')).toBe(38);
+    expect(boltsNeeded(wallet({ bolts: 12 }), 'body:firetruck')).toBe(18);
   });
 });
 
@@ -213,7 +208,9 @@ describe('affordable', () => {
   it('lists the locked Mods and Bodies he has enough Bolts for, never a Legendary', () => {
     expect(affordable(wallet({ bolts: 15, unlocked: ['tires:1'] }))).toEqual(['tires:2', 'paint:1', 'paint:2', 'decals:1', 'decals:2', 'lights:1', 'lights:2', 'horn:1', 'horn:2', 'engine:1', 'engine:2', 'grille:1', 'grille:2', 'exhaust:1', 'exhaust:2', 'topper:1', 'topper:2', 'number:1', 'number:2', ...BOUGHT_COLOURS.map(colourItem)]);
     expect(affordable(wallet({ bolts: 2 }))).toEqual([]);
-    expect(affordable(wallet({ bolts: 50, unlocked: ALL_MODS.filter(m => !isLegendary(m)), colours: BOUGHT_COLOURS }))).toEqual(['body:firetruck']);
+    const allButBodies = { unlocked: ALL_MODS.filter(m => !isLegendary(m)), colours: BOUGHT_COLOURS };
+    expect(affordable(wallet({ bolts: 29, ...allButBodies }))).toEqual([]);
+    expect(affordable(wallet({ bolts: 30, ...allButBodies }))).toEqual(BOUGHT_BODIES.map(bodyItem));
   });
 });
 

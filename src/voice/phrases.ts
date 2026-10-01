@@ -70,7 +70,7 @@ type GaragePhrase = Of<typeof GARAGE> | BodyName | SlotName | ModName | ColourNa
   | `You got ${BoltModName | BoughtBodyName | BoughtColourName}!` | `You can get ${BoltModName | BoughtBodyName | BoughtColourName}!`
   | `${LegendaryName} costs` | `You bought ${LegendaryName}!` | `Get ${TopModName} first!` | BoltsPhrase | NumberPhrase;
 /** The most Bolts anything costs. */
-export const MAX_PRICE = Math.max(...Object.values(PRICES.rungs), ...Object.values(PRICES.bodies), PRICES.colour);
+export const MAX_PRICE = Math.max(...Object.values(PRICES.rungs), PRICES.body, PRICES.colour);
 /** "You need 4 more Bolts." */
 export const needBolts = (n: number): BoltsPhrase => (n === 1 ? 'You need 1 more Bolt.' : `You need ${n} more Bolts.`);
 /** "42!": the Door Number, read aloud as he turns the wheels. */

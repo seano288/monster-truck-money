@@ -25,3 +25,5 @@
 ## Comments
 
 - 2026-09-30: Open questions settled with the defaults: Tow Truck, Dump Truck, Police Truck, Ice Cream Truck, Tractor and Race Car at 125 / 150 / 175 / 200 / 250 / 300 Bolts. Built. Each has a small extra in 3D: a winch on the tow bed (the boom is a crane arm, so it's left for a later ticket), dump-box ribs, a red and blue light bar, a cone on the roof with an awning over the serving window, an exhaust stack, and a rear wing. The Body strip already scrolled; it now keeps the Body he's driving scrolled into view. `migrate.ts` already filled missing Body keys with default fits, so there's no version bump. The top price rising to 300 means "You need N more Bolts." is recorded up to 300, which adds 200 clips (the voice folder goes from 6.4 MB to 10 MB of precache). The iPad check is still to do.
+
+> **Update (2026-09-30):** every Body bought with Bolts now costs 30 Bolts (`PRICES.body`); saving up to 300 was too much.
